@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "buildFlags": [
+                "-race"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "console": "externalTerminal",
+            "hideSystemGoroutines": true
+        }
+    ]
+}
