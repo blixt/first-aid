@@ -19,8 +19,7 @@ func TestListFiles(t *testing.T) {
 	os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("line1\nline2\n"), 0644)
 	os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644)
 
-	runner := tool.NewRunner(func(status string) {})
-	result := firstaid.ListFiles.Run(runner, json.RawMessage(fmt.Sprintf(`{"path":%q}`, tempDir)))
+	result := firstaid.ListFiles.Run(tool.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q}`, tempDir)))
 
 	if result.Error() != nil {
 		t.Fatalf("Expected no error, got %v", result.Error())
