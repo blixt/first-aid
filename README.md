@@ -47,6 +47,8 @@ The development goals of this tool are roughly:
 - [ ] Support local models and/or other LLM providers
 - [ ] Sandboxing (e.g. Docker) for security and privacy
 - [ ] Introduce ways to clear the context window (effective memory)
+- [ ] Add a server layer that can run / synchronize multiple instances of an agent
+- [ ] Session based tools, such as long-running command line tools
 
 ## Tool ideas
 
@@ -55,7 +57,9 @@ The development goals of this tool are roughly:
   - Activate tab
   - Screenshot tab
   - Click/type in tab
-- [ ] 
+- [ ] Schedule a task for later
+  - Something like “check the weather tomorrow morning and speak it out loud”
+  - Also includes repeating tasks like “every day at 2pm”
 
 ## For developers
 
