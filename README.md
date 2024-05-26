@@ -8,6 +8,21 @@ A little help from a reluctant AI on the command line.
 >
 > If either of these things make you uncomfortable, don’t run this tool. I hope the code can be interesting nonetheless!
 
+## ToC
+
+- [First Aid](#first-aid)
+  - [ToC](#toc)
+  - [Usage](#usage)
+  - [Intended use cases for this tool](#intended-use-cases-for-this-tool)
+  - [Roadmap](#roadmap)
+  - [Tool ideas](#tool-ideas)
+  - [For developers](#for-developers)
+    - [The `tool` package](#the-tool-package)
+    - [Tools that return images](#tools-that-return-images)
+    - [The `writer`, `serif`, and `spinner` packages](#the-writer-serif-and-spinner-packages)
+    - [The `llm` package](#the-llm-package)
+  - [A quote from the tool itself](#a-quote-from-the-tool-itself)
+
 ## Usage
 
 ```sh
