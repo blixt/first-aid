@@ -48,7 +48,7 @@ The development goals of this tool are roughly:
 - [ ] Sandboxing (e.g. Docker) for security and privacy
 - [ ] Introduce ways to clear the context window (effective memory)
 - [ ] Add a server layer that can run / synchronize multiple instances of an agent
-- [ ] Session based tools, such as long-running command line tools
+- [ ] Solve for session based tools, such as long-running command line tools
 
 ## Tool ideas
 
@@ -102,11 +102,13 @@ var RunPowerShellCmd = tool.Func(
 ```
 
 This can now be turned into a JSON schema (which is what most LLM APIs accept
-for tool use) by calling `RunPowerShellCmd.Schema()` and it can be run like
-this:
+for tool use) by calling `RunPowerShellCmd.Schema()`.
+
+To run the tool with the data received from the LLM:
 
 ```go
-result := RunPowerShellCmd.Run(tool.NopRunner, `{"command":"Get-ComputerInfo"}`)
+arguments := json.RawMessage(`{"command":"Get-ComputerInfo"}`)
+result := RunPowerShellCmd.Run(tool.NopRunner, arguments)
 ```
 
 This will parse the JSON into the parameters type, validate it, and call the
@@ -128,7 +130,8 @@ toolbox := tool.Box(
 schema := toolbox.Schema() // Can be used directly for "tools" in OpenAI's API
 
 // The function name and JSON arguments can be used directly from "tool_calls"
-result := toolbox.Run(tool.NopRunner, "run_python", `{"code":"print('hi')"}`)
+arguments := json.RawMessage(`{"code":"print('hi')"}`)
+result := toolbox.Run(tool.NopRunner, "run_python", arguments)
 ```
 
 ### Tools that return images
