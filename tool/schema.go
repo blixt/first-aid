@@ -8,47 +8,71 @@ import (
 	"strings"
 )
 
+type Schema struct {
+	Type     string         `json:"type"`
+	Function FunctionSchema `json:"function"`
+}
+
+type FunctionSchema struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Parameters  ValueSchema `json:"parameters"`
+}
+
+type ValueSchema struct {
+	Type        string       `json:"type"`
+	Description string       `json:"description,omitempty"`
+	Items       *ValueSchema `json:"items,omitempty"`
+	// Note: We use a pointer to the map here to differentiate "no map" from "empty map".
+	// See: https://github.com/golang/go/issues/22480
+	Properties           *map[string]ValueSchema `json:"properties,omitempty"`
+	AdditionalProperties *ValueSchema            `json:"additionalProperties,omitempty"`
+	Required             []string                `json:"required,omitempty"`
+}
+
 // generateSchema initializes and returns the main structure of a function's JSON Schema
-func generateSchema(name, description string, typ reflect.Type) map[string]any {
+func generateSchema(name, description string, typ reflect.Type) *Schema {
 	parameters := generateObjectSchema(typ)
-	return map[string]any{
-		"type": "function",
-		"function": map[string]any{
-			"name":        name,
-			"description": description,
-			"parameters":  parameters,
+	return &Schema{
+		Type: "function",
+		Function: FunctionSchema{
+			Name:        name,
+			Description: description,
+			Parameters:  parameters,
 		},
 	}
 }
 
 // fieldTypeToJSONSchema maps Go data types to corresponding JSON Schema properties consistently
-func fieldTypeToJSONSchema(t reflect.Type) map[string]any {
+func fieldTypeToJSONSchema(t reflect.Type) ValueSchema {
 	switch t.Kind() {
 	case reflect.String:
-		return map[string]any{"type": "string"}
+		return ValueSchema{Type: "string"}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return map[string]any{"type": "integer"}
+		return ValueSchema{Type: "integer"}
 	case reflect.Bool:
-		return map[string]any{"type": "boolean"}
+		return ValueSchema{Type: "boolean"}
 	case reflect.Float32, reflect.Float64:
-		return map[string]any{"type": "number"}
+		return ValueSchema{Type: "number"}
 	case reflect.Slice, reflect.Array:
-		return map[string]any{"type": "array", "items": fieldTypeToJSONSchema(t.Elem())}
+		itemSchema := fieldTypeToJSONSchema(t.Elem())
+		return ValueSchema{Type: "array", Items: &itemSchema}
 	case reflect.Map:
-		return map[string]any{"type": "object", "additionalProperties": fieldTypeToJSONSchema(t.Elem())}
+		additionalPropertiesSchema := fieldTypeToJSONSchema(t.Elem())
+		return ValueSchema{Type: "object", AdditionalProperties: &additionalPropertiesSchema}
 	case reflect.Struct:
 		return generateObjectSchema(t)
 	case reflect.Ptr:
 		return fieldTypeToJSONSchema(t.Elem())
 	default:
-		return map[string]any{"type": "unknown"}
+		panic("unsupported type: " + t.Kind().String())
 	}
 }
 
 // generateObjectSchema constructs a JSON Schema for structs
-func generateObjectSchema(typ reflect.Type) map[string]any {
-	properties := make(map[string]any)
+func generateObjectSchema(typ reflect.Type) ValueSchema {
+	properties := make(map[string]ValueSchema)
 	required := []string{}
 
 	for i := 0; i < typ.NumField(); i++ {
@@ -68,42 +92,30 @@ func generateObjectSchema(typ reflect.Type) map[string]any {
 
 		fieldSchema := fieldTypeToJSONSchema(field.Type)
 		if description := field.Tag.Get("description"); description != "" {
-			fieldSchema["description"] = description
+			fieldSchema.Description = description
 		}
 		properties[fieldName] = fieldSchema
 		if len(parts) == 1 || (len(parts) > 1 && parts[1] != "omitempty") {
 			required = append(required, fieldName)
 		}
 	}
-	return map[string]any{
-		"type":       "object",
-		"properties": properties,
-		"required":   required,
+	return ValueSchema{
+		Type:       "object",
+		Properties: &properties,
+		Required:   required,
 	}
 }
 
 // validateJSON checks if jsonData conforms to the structure defined in the schema from generateSchema
-func validateJSON(schema map[string]any, jsonData json.RawMessage) error {
-	function, ok := schema["function"].(map[string]any)
-	if !ok {
-		return errors.New("schema error: expected 'function' key in schema")
-	}
-
-	parameters, ok := function["parameters"].(map[string]any)
-	if !ok {
-		return errors.New("schema error: expected 'parameters' key in function schema")
-	}
-
-	return validateParameters(parameters, jsonData)
+func validateJSON(schema *Schema, jsonData json.RawMessage) error {
+	return validateParameters(schema.Function.Parameters, jsonData)
 }
 
 // validateParameters validates JSON data against the provided parameters schema
-func validateParameters(schema map[string]any, jsonData json.RawMessage) error {
-	properties, ok := schema["properties"].(map[string]any)
-	if !ok {
-		return errors.New("schema error: properties must be a map")
+func validateParameters(schema ValueSchema, jsonData json.RawMessage) error {
+	if schema.Type != "object" || schema.Properties == nil {
+		return errors.New("schema error: received an invalid object schema")
 	}
-	requiredFields, _ := schema["required"].([]string)
 
 	var dataMap map[string]any
 	if err := json.Unmarshal(jsonData, &dataMap); err != nil {
@@ -111,7 +123,7 @@ func validateParameters(schema map[string]any, jsonData json.RawMessage) error {
 	}
 
 	for key, val := range dataMap {
-		fieldSchema, found := properties[key]
+		fieldSchema, found := (*schema.Properties)[key]
 		if !found {
 			continue // Ignoring extra fields
 		}
@@ -120,7 +132,7 @@ func validateParameters(schema map[string]any, jsonData json.RawMessage) error {
 		}
 	}
 
-	for _, field := range requiredFields {
+	for _, field := range schema.Required {
 		if _, exists := dataMap[field]; !exists {
 			return fmt.Errorf("missing required field: %s", field)
 		}
@@ -130,16 +142,8 @@ func validateParameters(schema map[string]any, jsonData json.RawMessage) error {
 }
 
 // validateField checks a single field against its schema
-func validateField(fieldSchema any, data any) error {
-	spec, ok := fieldSchema.(map[string]any)
-	if !ok {
-		return errors.New("schema error: field schema must be a map")
-	}
-
-	dataType, ok := spec["type"].(string)
-	if !ok {
-		return errors.New("schema error: missing type specification")
-	}
+func validateField(fieldSchema ValueSchema, data any) error {
+	dataType := fieldSchema.Type
 
 	switch dataType {
 	case "integer":
@@ -164,10 +168,10 @@ func validateField(fieldSchema any, data any) error {
 		if !ok {
 			return fmt.Errorf("type mismatch: expected array, got %T", data)
 		}
-		itemSchema, ok := spec["items"].(map[string]any)
-		if !ok {
+		if fieldSchema.Items == nil {
 			return errors.New("schema error: missing item schema for array")
 		}
+		itemSchema := *fieldSchema.Items
 		for _, item := range items {
 			if err := validateField(itemSchema, item); err != nil {
 				return err
@@ -182,7 +186,7 @@ func validateField(fieldSchema any, data any) error {
 		if err != nil {
 			return errors.New("failed to marshal object data for validation")
 		}
-		return validateParameters(spec, json.RawMessage(jsonData))
+		return validateParameters(fieldSchema, json.RawMessage(jsonData))
 	default:
 		return fmt.Errorf("unsupported type: %s", dataType)
 	}

@@ -45,10 +45,10 @@ func (t *Toolbox) Run(r Runner, funcName string, params json.RawMessage) Result 
 }
 
 // Schema returns the JSON schema for all tools in the toolbox.
-func (t *Toolbox) Schema() []map[string]any {
-	tools := []map[string]any{}
+func (t *Toolbox) Schema() []Schema {
+	tools := []Schema{}
 	for _, tool := range t.tools {
-		tools = append(tools, tool.Schema())
+		tools = append(tools, *tool.Schema())
 	}
 	return tools
 }

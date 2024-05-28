@@ -17,7 +17,7 @@ type Tool interface {
 	// Run runs the tool with the provided parameters.
 	Run(r Runner, params json.RawMessage) Result
 	// Schema returns the JSON schema for the tool.
-	Schema() map[string]any
+	Schema() *Schema
 }
 
 // Func returns a tool for a function implementation with the given name and description.
@@ -53,7 +53,7 @@ type tool struct {
 	fn func(r Runner, params json.RawMessage) Result
 
 	// Note: Lazily initialized.
-	schema     map[string]any
+	schema     *Schema
 	schemaOnce sync.Once
 	schemaType reflect.Type
 }
@@ -74,7 +74,7 @@ func (t *tool) Run(r Runner, params json.RawMessage) Result {
 	return t.fn(r, params)
 }
 
-func (t *tool) Schema() map[string]any {
+func (t *tool) Schema() *Schema {
 	t.schemaOnce.Do(func() {
 		t.schema = generateSchema(t.funcName, t.description, t.schemaType)
 	})

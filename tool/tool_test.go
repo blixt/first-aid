@@ -34,12 +34,16 @@ func TestGenerateSchema(t *testing.T) {
 					"email":   map[string]any{"type": "string"}, // Email is optional
 					"isAdmin": map[string]any{"type": "boolean"},
 				},
-				"required": []string{"name", "age", "isAdmin"}, // Email is not required due to omitempty
+				"required": []any{"name", "age", "isAdmin"}, // Email is not required due to omitempty
 			},
 		},
 	}
-	if !reflect.DeepEqual(schema, expectedSchema) {
-		t.Errorf("Expected schema %v, got %v", expectedSchema, schema)
+
+	var unmarshaledSchema map[string]any
+	schemaJSON, _ := json.Marshal(schema)
+	_ = json.Unmarshal(schemaJSON, &unmarshaledSchema)
+	if !reflect.DeepEqual(unmarshaledSchema, expectedSchema) {
+		t.Errorf("Expected schema:\n%#v\nGot:\n%#v", expectedSchema, unmarshaledSchema)
 	}
 }
 

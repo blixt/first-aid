@@ -147,7 +147,7 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 	// Write the entire message history to the file debug.yaml. The function is
 	// deferred so that we get data even if a panic occurs.
 	defer func() {
-		var toolsSchema []map[string]any
+		var toolsSchema []tool.Schema
 		if l.toolbox != nil {
 			toolsSchema = l.toolbox.Schema()
 		}
