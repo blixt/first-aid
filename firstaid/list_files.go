@@ -22,7 +22,7 @@ type FileInfo struct {
 
 var ListFiles = tool.Func(
 	"List files",
-	"Lists some of the files and directories in the specified path along with some extra info. It will only do a depth up to 2 so call it again if you want to look deeper. It also won't walk into certain directories like .git or node_modules.",
+	"Lists some of the contents in the specified directory. Don't use this on files. It will only do a depth up to 2 so call it again if you want to look deeper.",
 	"list_files",
 	func(r tool.Runner, p ListFilesParams) tool.Result {
 		items := make(map[string]FileInfo)
