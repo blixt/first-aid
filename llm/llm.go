@@ -211,7 +211,7 @@ func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan c
 	}
 
 	t := toolbox.Get(toolCall.Function.Name)
-	runner := tool.NewRunner(func(status string) {
+	runner := tool.NewRunner(toolbox, func(status string) {
 		updateChan <- ToolStatusUpdate{Status: status, Tool: t}
 	})
 
