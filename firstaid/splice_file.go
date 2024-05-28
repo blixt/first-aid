@@ -62,15 +62,16 @@ var SpliceFile = tool.Func(
 			i++
 		}
 
-		// Create a backup of the original file, then replace its contents.
+		// Create a backup of the original file (if it wasn't empty).
 		if i > 0 {
 			backupPath := fmt.Sprintf("%s.%d.bak", p.Path, time.Now().Unix())
 			if err := copyFile(p.Path, backupPath); err != nil {
 				return tool.Error(p.Path, fmt.Errorf("failed to create backup: %w", err))
 			}
-			if err := writeFileAtomically(p.Path, strings.NewReader(result.String())); err != nil {
-				return tool.Error(p.Path, fmt.Errorf("failed to write updated content: %w", err))
-			}
+		}
+
+		if err := writeFileAtomically(p.Path, strings.NewReader(result.String())); err != nil {
+			return tool.Error(p.Path, fmt.Errorf("failed to write updated content: %w", err))
 		}
 
 		var description string
