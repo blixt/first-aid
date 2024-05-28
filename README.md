@@ -64,6 +64,8 @@ The development goals of this tool are roughly:
 - [ ] Introduce ways to clear the context window (effective memory)
 - [ ] Add a server layer that can run / synchronize multiple instances of an agent
 - [ ] Solve for session based tools, such as long-running command line tools
+- [ ] Answer the question of asking the LLM to write a script vs. use tools
+  - Or both... maybe?
 
 ## Tool ideas
 
