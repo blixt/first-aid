@@ -147,12 +147,16 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 	// Write the entire message history to the file debug.yaml. The function is
 	// deferred so that we get data even if a panic occurs.
 	defer func() {
+		var toolsSchema []map[string]any
+		if l.toolbox != nil {
+			toolsSchema = l.toolbox.Schema()
+		}
 		debugData := map[string]any{
 			// Prefixed with numbers so the keys remain in this order.
 			"1_sentMessages":    messages,
 			"2_receivedMessage": stream.Message(),
 			"3_toolResults":     toolMessages,
-			"4_availableTools":  l.toolbox.Schema(),
+			"4_availableTools":  toolsSchema,
 			"5_usage":           stream.Usage(),
 		}
 		if debugYAML, err := yaml.Marshal(debugData); err == nil {
