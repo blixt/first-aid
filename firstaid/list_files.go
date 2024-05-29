@@ -11,7 +11,8 @@ import (
 )
 
 type ListFilesParams struct {
-	Path string `json:"path"`
+	Path  string `json:"path"`
+	Depth int    `json:"depth,omitempty"`
 }
 
 type FileInfo struct {
@@ -22,10 +23,11 @@ type FileInfo struct {
 
 var ListFiles = tool.Func(
 	"List files",
-	"Lists some of the contents in the specified directory. Don't use this on files. It will only do a depth up to 2 so call it again if you want to look deeper.",
+	"Lists some of the contents in the specified directory. Don't use this on files. Don't use a depth higher than 2 unless you're really sure.",
 	"list_files",
 	func(r tool.Runner, p ListFilesParams) tool.Result {
 		items := make(map[string]FileInfo)
+		entries := 0
 
 		err := filepath.WalkDir(p.Path, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
@@ -33,12 +35,20 @@ var ListFiles = tool.Func(
 			}
 			relPath, _ := filepath.Rel(p.Path, path)
 			if relPath == "." {
-				// Skip the root directory itself
+				// Skip the root directory itself.
 				return nil
 			}
 			depth := len(filepath.SplitList(relPath))
-			if depth >= 2 {
+			if depth >= p.Depth {
 				return filepath.SkipDir
+			}
+			entries++
+			if entries >= 1_000 {
+				if d.IsDir() {
+					return filepath.SkipDir
+				} else {
+					return nil
+				}
 			}
 			if d.IsDir() {
 				subItems, _ := os.ReadDir(path)
@@ -73,6 +83,10 @@ var ListFiles = tool.Func(
 		if err != nil {
 			return tool.Error(label, err)
 		}
-		return tool.Success(label, string(jsonData))
+		jsonDataString := string(jsonData)
+		if entries > 1_000 {
+			jsonDataString += fmt.Sprintf("\n// There were %d entries, but we could only include 1000.", entries)
+		}
+		return tool.Success(label, jsonDataString)
 	},
 )
