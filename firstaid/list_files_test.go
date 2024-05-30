@@ -16,10 +16,12 @@ func TestListFiles(t *testing.T) {
 	// Setup a temporary directory with files and subdirectories
 	tempDir := t.TempDir()
 	os.Mkdir(filepath.Join(tempDir, "subdir"), 0755)
+	os.Mkdir(filepath.Join(tempDir, "subdir", "subsubdir"), 0755)
 	os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("line1\nline2\n"), 0644)
 	os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644)
+	os.WriteFile(filepath.Join(tempDir, "subdir", "subsubdir", "file3.txt"), []byte("line1\nline2\nline3\nline4\n"), 0644)
 
-	result := firstaid.ListFiles.Run(tool.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q}`, tempDir)))
+	result := firstaid.ListFiles.Run(tool.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
 
 	if result.Error() != nil {
 		t.Fatalf("Expected no error, got %v", result.Error())
@@ -32,11 +34,16 @@ func TestListFiles(t *testing.T) {
 		},
 		"subdir": {
 			Type:  "directory",
-			Count: 1,
+			Count: 2,
 		},
 		"subdir/file2.txt": {
 			Type:  "file",
 			Lines: 3,
+		},
+		"subdir/subsubdir": {
+			Type:            "directory",
+			Count:           1,
+			ContentsSkipped: true,
 		},
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/blixt/first-aid/tool"
 )
@@ -16,9 +17,10 @@ type ListFilesParams struct {
 }
 
 type FileInfo struct {
-	Type  string `json:"type"`
-	Lines int    `json:"lines,omitempty"`
-	Count int    `json:"count,omitempty"`
+	Type            string `json:"type"`
+	Lines           int    `json:"lines,omitempty"`
+	Count           int    `json:"count,omitempty"`
+	ContentsSkipped bool   `json:"contentsSkipped,omitempty"`
 }
 
 var ListFiles = tool.Func(
@@ -26,6 +28,10 @@ var ListFiles = tool.Func(
 	"Lists some of the contents in the specified directory. Don't use this on files. Don't use a depth higher than 2 unless you're really sure.",
 	"list_files",
 	func(r tool.Runner, p ListFilesParams) tool.Result {
+		if p.Depth < 1 {
+			p.Depth = 1
+		}
+
 		items := make(map[string]FileInfo)
 		entries := 0
 
@@ -38,8 +44,8 @@ var ListFiles = tool.Func(
 				// Skip the root directory itself.
 				return nil
 			}
-			depth := len(filepath.SplitList(relPath))
-			if depth >= p.Depth {
+			depth := len(strings.Split(relPath, string(os.PathSeparator)))
+			if depth > p.Depth {
 				return filepath.SkipDir
 			}
 			entries++
@@ -53,8 +59,9 @@ var ListFiles = tool.Func(
 			if d.IsDir() {
 				subItems, _ := os.ReadDir(path)
 				items[relPath] = FileInfo{
-					Type:  "directory",
-					Count: len(subItems),
+					Type:            "directory",
+					Count:           len(subItems),
+					ContentsSkipped: depth == p.Depth,
 				}
 				switch d.Name() {
 				case ".git", "node_modules":
