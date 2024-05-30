@@ -2,6 +2,7 @@ package spinner
 
 import (
 	"fmt"
+	"io"
 	"sync"
 	"time"
 )
@@ -43,8 +44,8 @@ func (s *Spinner) SetLabel(label string) {
 }
 
 // Start starts animating the spinner until Stop is called.
-func (s *Spinner) Start() {
-	fmt.Printf("\r\033[K%s", string(s.frames[s.current]))
+func (s *Spinner) Start(w io.Writer) {
+	fmt.Fprintf(w, "\r\033[K%s", string(s.frames[s.current]))
 	ticker := time.NewTicker(100 * time.Millisecond)
 	s.wg.Add(1)
 	go func() {
@@ -53,7 +54,7 @@ func (s *Spinner) Start() {
 			select {
 			case <-s.done:
 				ticker.Stop()
-				fmt.Print("\r\033[K")
+				fmt.Fprint(w, "\r\033[K")
 				return
 			case <-ticker.C:
 				s.current = (s.current + 1) % len(s.frames)
@@ -61,9 +62,9 @@ func (s *Spinner) Start() {
 				label := s.label
 				s.mu.Unlock()
 				if label != "" {
-					fmt.Printf("\r\033[K%s %s", string(s.frames[s.current]), label)
+					fmt.Fprintf(w, "\r\033[K%s %s", string(s.frames[s.current]), label)
 				} else {
-					fmt.Printf("\r\033[K%s", string(s.frames[s.current]))
+					fmt.Fprintf(w, "\r\033[K%s", string(s.frames[s.current]))
 				}
 			}
 		}
