@@ -20,6 +20,8 @@ var SliceFile = tool.Func(
 	"Read a slice of the lines in the specified file, if we imagine the file as a zero-indexed array of lines. Returns a JavaScript array value where each line is prefixed with its index in this imaginary array as a comment.",
 	"slice_file",
 	func(r tool.Runner, p SliceFileParams) tool.Result {
+		p.Path = expandPath(p.Path)
+
 		file, err := os.Open(p.Path)
 		if err != nil {
 			return tool.Error(p.Path, fmt.Errorf("failed to open file: %v", err))

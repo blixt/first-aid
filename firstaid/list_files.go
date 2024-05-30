@@ -31,6 +31,7 @@ var ListFiles = tool.Func(
 		if p.Depth < 1 {
 			p.Depth = 1
 		}
+		p.Path = expandPath(p.Path)
 
 		items := make(map[string]FileInfo)
 		entries := 0

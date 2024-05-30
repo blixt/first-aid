@@ -24,6 +24,7 @@ var SpliceFile = tool.Func(
 	"Delete and/or replace a slice of the lines in the specified file, if we imagine the file as a zero-indexed array of lines.",
 	"splice_file",
 	func(r tool.Runner, p SpliceFileParams) tool.Result {
+		p.Path = expandPath(p.Path)
 		// Open or create the file if it doesn't exist.
 		file, err := os.OpenFile(p.Path, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {

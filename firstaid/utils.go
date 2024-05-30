@@ -2,6 +2,8 @@ package firstaid
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -35,4 +37,18 @@ func FirstLineBytes(data []byte) string {
 
 func FirstLineString(s string) string {
 	return FirstLine(strings.Split(strings.TrimSpace(s), "\n"))
+}
+
+func expandPath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		dirname, _ := os.UserHomeDir()
+		path = filepath.Join(dirname, path[2:])
+	}
+	path = os.ExpandEnv(path)
+	// Prefer a relative path when it goes deeper into the current directory.
+	relPath, err := filepath.Rel(os.TempDir(), path)
+	if err != nil || relPath == ".." || strings.HasPrefix(relPath, "../") {
+		return path
+	}
+	return relPath
 }
