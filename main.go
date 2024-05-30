@@ -30,6 +30,7 @@ func main() {
 	gpt4o := llm.New(
 		model,
 		firstaid.ListFiles,
+		firstaid.LookAtImage,
 		firstaid.RunPython,
 		firstaid.SliceFile,
 		firstaid.SpliceFile,
