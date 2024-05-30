@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 
 	"sigs.k8s.io/yaml"
@@ -191,6 +192,16 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 
 	// Add the fully assembled message plus tool call results to the message history.
 	l.messages = append(l.messages, stream.Message())
+	// Role "tool" must always come first.
+	slices.SortStableFunc(toolMessages, func(a, b Message) int {
+		if a.Role == "tool" && b.Role != "tool" {
+			return -1
+		}
+		if a.Role != "tool" && b.Role == "tool" {
+			return 1
+		}
+		return 0
+	})
 	l.messages = append(l.messages, toolMessages...)
 
 	if usage := stream.Usage(); usage != nil {
