@@ -9,7 +9,8 @@ import (
 )
 
 type LookAtImageParams struct {
-	Path string `json:"path"`
+	Path        string `json:"path"`
+	HighQuality bool   `json:"high_quality,omitempty" description:"Use true if you want to see the image in higher resolution."`
 }
 
 var LookAtImage = tool.Func(
@@ -23,7 +24,7 @@ var LookAtImage = tool.Func(
 			return tool.Error(label, fmt.Errorf("file does not exist: %s", p.Path))
 		}
 		var rb tool.ResultBuilder
-		rb.AddImage(p.Path)
+		rb.AddImage(p.Path, p.HighQuality)
 		return rb.Success(label, fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(p.Path)))
 	},
 )

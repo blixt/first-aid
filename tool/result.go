@@ -3,11 +3,14 @@ package tool
 import (
 	"encoding/base64"
 	"fmt"
-	"io"
-	"mime"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/image/draw"
 )
 
 type Result interface {
@@ -68,23 +71,60 @@ type Image struct {
 	Name, URL string
 }
 
-func (b *ResultBuilder) AddImage(path string) error {
-	mimeType := mime.TypeByExtension(filepath.Ext(path))
-	if mimeType == "" {
-		return fmt.Errorf("unknown file extension: %s", path)
-	}
-
+func (b *ResultBuilder) AddImage(path string, highQuality bool) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	img, format, err := image.Decode(file)
+	if err != nil {
+		return err
+	}
+
+	// Check image dimensions and resize if necessary.
+	var maxDim int
+	if highQuality {
+		maxDim = 2048
+	} else {
+		maxDim = 512
+	}
+
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	if width > maxDim || height > maxDim {
+		var newWidth, newHeight int
+		if width > height {
+			newWidth = maxDim
+			newHeight = (height * maxDim) / width
+		} else {
+			newHeight = maxDim
+			newWidth = (width * maxDim) / height
+		}
+
+		resizedImg := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+		draw.CatmullRom.Scale(resizedImg, resizedImg.Bounds(), img, bounds, draw.Over, nil)
+		img = resizedImg
+	}
+
 	// Turn the image data into a base64 string.
 	var encodedImage strings.Builder
 	encoder := base64.NewEncoder(base64.StdEncoding, &encodedImage)
 	defer encoder.Close()
-	if _, err := io.Copy(encoder, file); err != nil {
+
+	var mimeType string
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(encoder, img, nil)
+		mimeType = "image/jpeg"
+	case "png":
+		err = png.Encode(encoder, img)
+		mimeType = "image/png"
+	default:
+		return fmt.Errorf("unsupported image format: %s", format)
+	}
+	if err != nil {
 		return err
 	}
 

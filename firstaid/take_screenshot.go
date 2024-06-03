@@ -39,7 +39,7 @@ var TakeScreenshot = tool.Func(
 		defer os.Remove(screenshotPath)
 
 		var rb tool.ResultBuilder
-		rb.AddImage(screenshotPath)
+		rb.AddImage(screenshotPath, true)
 		return rb.Success("Take screenshot", fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(screenshotPath)))
 	},
 )

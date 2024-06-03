@@ -6,6 +6,7 @@ require (
 	github.com/ebitengine/oto/v3 v3.2.0
 	github.com/peterh/liner v1.2.2
 	github.com/playwright-community/playwright-go v0.4201.1
+	golang.org/x/image v0.16.0
 	golang.org/x/term v0.20.0
 	sigs.k8s.io/yaml v1.4.0
 )
