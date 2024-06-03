@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/peterh/liner"
 	"github.com/playwright-community/playwright-go"
 
@@ -18,6 +19,10 @@ import (
 
 func main() {
 	if err := playwright.Install(&playwright.RunOptions{Verbose: false}); err != nil {
+		panic(err)
+	}
+
+	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
 
