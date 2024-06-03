@@ -36,6 +36,7 @@ func main() {
 		model,
 		firstaid.ListFiles,
 		firstaid.LookAtImage,
+		firstaid.LookAtRealWorld,
 		firstaid.RunPython,
 		firstaid.SliceFile,
 		firstaid.SpliceFile,
