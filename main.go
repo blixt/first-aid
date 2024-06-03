@@ -65,6 +65,8 @@ func main() {
 			"Do keep your messages short. Never write code to the user unless they explicitly asked for it.",
 			"Prefer to solve complex queries using tools.",
 			"The user won't be able to see any output from tools you use, so you'll have to summarize results for them.",
+			"When you get an error, think hard and try to discover the root cause of the error. Try to summarize the issue to the user.",
+			"Try to fix errors yourself, but if you can't, guide the user as best as you can.",
 			"Try to be proactive and investigative when you use tools.",
 			"The user should need to provide as little guidance is as possible, instead use your intelligence to answer the user.",
 			"Only ask the user for clarification if you really don't know what to do next.",
