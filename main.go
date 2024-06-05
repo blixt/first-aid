@@ -10,19 +10,15 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/peterh/liner"
-	"github.com/playwright-community/playwright-go"
 
+	"github.com/blixt/first-aid/chromecontrol"
 	"github.com/blixt/first-aid/firstaid"
 	"github.com/blixt/first-aid/llm"
 	"github.com/blixt/first-aid/writer"
 )
 
 func main() {
-	if err := playwright.Install(&playwright.RunOptions{Verbose: false}); err != nil {
-		panic(err)
-	}
-
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Overload(); err != nil {
 		panic(err)
 	}
 
@@ -89,6 +85,15 @@ func main() {
 	if runtime.GOOS == "windows" {
 		gpt4o.AddTool(firstaid.RunPowerShellCmd)
 	}
+
+	// Set up a server for the accompanying Google Chrome Extension to connect
+	// to, enabling control of the browser by the LLM.
+	chromeServer := chromecontrol.NewServer()
+	if err := chromeServer.Start(); err != nil {
+		panic(fmt.Sprintf("Failed to start WebSocket server: %v", err))
+	}
+	defer chromeServer.Close()
+	chromeServer.AddToolsToLLM(gpt4o)
 
 	// The liner package makes the input prompt a lot nicer to use, supporting
 	// arrow keys and common keyboard shortcuts.

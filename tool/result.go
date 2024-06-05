@@ -128,9 +128,14 @@ func (b *ResultBuilder) AddImage(path string, highQuality bool) error {
 		return err
 	}
 
+	dataURI := fmt.Sprintf("data:%s;base64,%s", mimeType, encodedImage.String())
+	return b.AddImageURL(filepath.Base(path), dataURI)
+}
+
+func (b *ResultBuilder) AddImageURL(name, dataURI string) error {
 	image := Image{
-		Name: filepath.Base(path),
-		URL:  fmt.Sprintf("data:%s;base64,%s", mimeType, encodedImage.String()),
+		Name: name,
+		URL:  dataURI,
 	}
 	b.images = append(b.images, image)
 	return nil

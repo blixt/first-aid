@@ -1,0 +1,21 @@
+{
+	"manifest_version": 3,
+	"name": "ChromeControl",
+	"version": "0.1.0",
+	"description": "Let First Aid use your browser.",
+	"author": "me@blixt.org",
+	"homepage_url": "https://github.com/blixt/first-aid",
+	"action": { "default_popup": "index.html" },
+	"icons": {
+		"16": "icon16.png",
+		"32": "icon32.png",
+		"48": "icon48.png",
+		"128": "icon128.png"
+	},
+	"permissions": ["activeTab", "background", "scripting", "tabs"],
+	"host_permissions": ["https://*/*", "ws://localhost:49158/*"],
+	"background": {
+		"service_worker": "src/service-worker.ts",
+		"type": "module"
+	}
+}
