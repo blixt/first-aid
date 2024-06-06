@@ -12,8 +12,8 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
-	"permissions": ["activeTab", "background", "scripting", "tabs"],
-	"host_permissions": ["https://*/*", "ws://localhost:49158/*"],
+	"permissions": ["activeTab", "background", "scripting", "search", "tabs"],
+	"host_permissions": ["<all_urls>"],
 	"background": {
 		"service_worker": "src/service-worker.ts",
 		"type": "module"

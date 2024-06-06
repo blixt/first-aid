@@ -28,12 +28,30 @@ func (s *Server) SetActiveTab(id int) error {
 	return err
 }
 
-func (s *Server) OpenTab(urlOrQuery string, background bool) (int, error) {
+func (s *Server) OpenTab(url string, background bool) (int, error) {
 	params := map[string]interface{}{
-		"urlOrQuery": urlOrQuery,
+		"url":        url,
 		"background": background,
 	}
 	result, err := s.sendRPC("openTab", params)
+	if err != nil {
+		return 0, err
+	}
+
+	var tabID int
+	if err := json.Unmarshal(result, &tabID); err != nil {
+		return 0, err
+	}
+
+	return tabID, nil
+}
+
+func (s *Server) SearchWeb(query string, background bool) (int, error) {
+	params := map[string]interface{}{
+		"query":      query,
+		"background": background,
+	}
+	result, err := s.sendRPC("searchWeb", params)
 	if err != nil {
 		return 0, err
 	}

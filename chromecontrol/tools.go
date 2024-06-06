@@ -12,16 +12,21 @@ type ListTabsParams struct {
 }
 
 type SetActiveTabParams struct {
-	ID int
+	ID int `json:"id"`
 }
 
 type OpenTabParams struct {
-	URLOrQuery string
-	Background bool
+	URL        string `json:"url" description:"Must be a URL including the schema"`
+	Background bool   `json:"background,omitempty"`
 }
 
 type ScreenshotTabParams struct {
-	ID int
+	ID int `json:"id"`
+}
+
+type SearchWebParams struct {
+	Query      string `json:"query"`
+	Background bool   `json:"background,omitempty"`
 }
 
 func (s *Server) AddToolsToLLM(model *llm.LLM) {
@@ -50,11 +55,17 @@ func (s *Server) AddToolsToLLM(model *llm.LLM) {
 	model.AddTool(t)
 
 	t = tool.Func("Open new tab", "Open a new tab in the browser", "browser_open_tab", func(r tool.Runner, params OpenTabParams) tool.Result {
-		tabID, err := s.OpenTab(params.URLOrQuery, params.Background)
+		tabID, err := s.OpenTab(params.URL, params.Background)
 		if err != nil {
 			return tool.Error("Open new tab", err)
 		}
-		return tool.Success("Open new tab", fmt.Sprintf("Tab opened successfully with ID %d", tabID))
+		var content string
+		if params.Background {
+			content = fmt.Sprintf("Opened a new tab in the background. To switch to it or screenshot it, use id %d.", tabID)
+		} else {
+			content = fmt.Sprintf("Opened a new tab. To screenshot it, use id %d.", tabID)
+		}
+		return tool.Success("Open new tab", content)
 	})
 	model.AddTool(t)
 
@@ -66,6 +77,21 @@ func (s *Server) AddToolsToLLM(model *llm.LLM) {
 		var rb tool.ResultBuilder
 		rb.AddImageURL("screenshot.png", dataURI)
 		return rb.Success("Screenshot browser tab", "You will receive screenshot.png from the user as an automated message.")
+	})
+	model.AddTool(t)
+
+	t = tool.Func("Search the web", "Search the web using the default search provider", "browser_search_web", func(r tool.Runner, params SearchWebParams) tool.Result {
+		tabID, err := s.SearchWeb(params.Query, params.Background)
+		if err != nil {
+			return tool.Error("Search the web", err)
+		}
+		var content string
+		if params.Background {
+			content = fmt.Sprintf("A tab with the search results was opened in the background. To switch to it or screenshot it, use id %d.", tabID)
+		} else {
+			content = fmt.Sprintf("The search results are now in a new active tab. To screenshot it, use id %d.", tabID)
+		}
+		return tool.Success("Search the web", content)
 	})
 	model.AddTool(t)
 }

@@ -66,7 +66,10 @@ function connectWebSocket() {
 					result = await setActiveTab(params);
 					break;
 				case "openTab":
-					result = await openTab(params.urlOrQuery, params.background);
+					result = await openTab(params.url, params.background);
+					break;
+				case "searchWeb":
+					result = await searchWeb(params.query, params.background);
 					break;
 				case "screenshotTab":
 					result = await screenshotTab(params.id);
@@ -118,13 +121,10 @@ async function setActiveTab(id: number): Promise<void> {
 	}
 }
 
-async function openTab(
-	urlOrQuery: string,
-	background: boolean,
-): Promise<number> {
+async function openTab(url: string, background: boolean): Promise<number> {
 	try {
 		const tab = await chrome.tabs.create({
-			url: urlOrQuery,
+			url: url,
 			active: !background,
 		});
 		if (tab.id === undefined) {
@@ -133,6 +133,26 @@ async function openTab(
 		return tab.id;
 	} catch (error) {
 		throw new Error(getErrorMessage(error, "Failed to open tab"));
+	}
+}
+
+async function searchWeb(query: string, background: boolean): Promise<number> {
+	try {
+		// First, create a new tab
+		const tab = await chrome.tabs.create({
+			url: "about:blank",
+			active: !background,
+		});
+		if (tab.id === undefined) {
+			throw new Error("Failed to create tab");
+		}
+
+		// Then, perform the search in the newly created tab
+		await chrome.search.query({ text: query, tabId: tab.id });
+
+		return tab.id;
+	} catch (error) {
+		throw new Error(getErrorMessage(error, "Failed to search web"));
 	}
 }
 
