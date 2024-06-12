@@ -249,7 +249,7 @@ with the results of those tool calls.
 ```go
 func main() {
     gpt4o := llm.New(
-        "gpt-4o",
+        openai.New("gpt-4o"),
         mypkg.ListFiles,
         mypkg.RunPowerShellCmd,
         mypkg.RunPython,
