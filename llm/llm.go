@@ -1,11 +1,8 @@
 package llm
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -16,11 +13,11 @@ import (
 )
 
 type LLM struct {
-	model    string
+	provider Provider
 	messages []Message
 	toolbox  *tool.Toolbox
 
-	totalPromptTokens, totalCompletionTokens int
+	totalCost float64
 
 	// SystemPrompt should return the system prompt for the LLM. It's a function
 	// to allow the system prompt to dynamically change throughout a single
@@ -28,14 +25,14 @@ type LLM struct {
 	SystemPrompt func() Content
 }
 
-func New(model string, tools ...tool.Tool) *LLM {
+func New(provider Provider, tools ...tool.Tool) *LLM {
 	var toolbox *tool.Toolbox
 	if len(tools) > 0 {
 		toolbox = tool.Box(tools...)
 	}
 	return &LLM{
-		model:   model,
-		toolbox: toolbox,
+		provider: provider,
+		toolbox:  toolbox,
 	}
 }
 
@@ -84,66 +81,20 @@ func (l *LLM) AddTool(t tool.Tool) {
 	}
 }
 
-func (l *LLM) Usage() (promptTokens, completionTokens int) {
-	return l.totalPromptTokens, l.totalCompletionTokens
+func (l *LLM) TotalCost() float64 {
+	return l.totalCost
 }
 
 func (l *LLM) step(updateChan chan<- Update) (bool, error) {
-	var messages []Message
+	var systemPrompt Content
 	if l.SystemPrompt != nil {
-		messages = make([]Message, 0, len(l.messages)+1)
-		messages = append(messages, Message{
-			Role:    "system",
-			Content: l.SystemPrompt(),
-		})
-		messages = append(messages, l.messages...)
-	} else {
-		messages = l.messages
-	}
-
-	payload := map[string]any{
-		"model":          l.model,
-		"messages":       messages,
-		"stream":         true,
-		"stream_options": map[string]any{"include_usage": true},
-	}
-
-	if l.toolbox != nil {
-		payload["tools"] = l.toolbox.Schema()
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return false, fmt.Errorf("error encoding JSON: %w", err)
-	}
-
-	// TODO: Support more than OpenAI.
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(jsonData))
-	if err != nil {
-		return false, fmt.Errorf("error creating request: %w", err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OPENAI_API_KEY")))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("error making request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		decoder := json.NewDecoder(resp.Body)
-		var response map[string]any
-		if err := decoder.Decode(&response); err != nil {
-			return false, fmt.Errorf("received error status %s and failed to parse the body: %w", resp.Status, err)
-		}
-		return false, fmt.Errorf("%s: %v", resp.Status, response)
+		systemPrompt = l.SystemPrompt()
 	}
 
 	// This will hold results from tool calls, to be sent back to the LLM.
 	var toolMessages []Message
 
-	stream := NewMessageStream(resp.Body)
+	stream := l.provider.Generate(systemPrompt, l.messages, l.toolbox)
 
 	// Write the entire message history to the file debug.yaml. The function is
 	// deferred so that we get data even if a panic occurs.
@@ -154,11 +105,11 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 		}
 		debugData := map[string]any{
 			// Prefixed with numbers so the keys remain in this order.
-			"1_sentMessages":    messages,
-			"2_receivedMessage": stream.Message(),
-			"3_toolResults":     toolMessages,
-			"4_availableTools":  toolsSchema,
-			"5_usage":           stream.Usage(),
+			"1_receivedMessage": stream.Message(),
+			"2_toolResults":     toolMessages,
+			"3_sentMessages":    l.messages,
+			"4_systemPrompt":    systemPrompt,
+			"5_availableTools":  toolsSchema,
 		}
 		if debugYAML, err := yaml.Marshal(debugData); err == nil {
 			os.WriteFile("debug.yaml", debugYAML, 0644)
@@ -172,10 +123,10 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 		case StreamStatusText:
 			updateChan <- TextUpdate{Text: stream.Text()}
 		case StreamStatusToolCallBegin:
-			tool := l.toolbox.Get(stream.ToolCall().Function.Name)
+			tool := l.toolbox.Get(stream.ToolCall().Name)
 			if tool == nil {
 				// TODO: This should be handled more gracefully.
-				panic(fmt.Sprintf("tool %q not found", stream.ToolCall().Function.Name))
+				panic(fmt.Sprintf("tool %q not found", stream.ToolCall().Name))
 			}
 			updateChan <- ToolStartUpdate{Tool: tool}
 		case StreamStatusToolCallReady:
@@ -186,7 +137,6 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 	})
 
 	if err := stream.Err(); err != nil {
-		io.Copy(io.Discard, resp.Body)
 		return false, fmt.Errorf("error streaming: %w", err)
 	}
 
@@ -204,10 +154,7 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 	})
 	l.messages = append(l.messages, toolMessages...)
 
-	if usage := stream.Usage(); usage != nil {
-		l.totalPromptTokens += usage.PromptTokens
-		l.totalCompletionTokens += usage.CompletionTokens
-	}
+	l.totalCost += stream.CostUSD()
 
 	// Return true if there were tool calls, since the LLM should look at the results.
 	return len(toolMessages) > 0, nil
@@ -217,16 +164,16 @@ func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan c
 	// As a sanity check, make sure we don't try to run the same tool call twice.
 	for _, message := range l.messages {
 		if message.ToolCallID == toolCall.ID {
-			fmt.Printf("\ntool call %q (%s) has already been run\n", toolCall.ID, toolCall.Function.Name)
+			fmt.Printf("\ntool call %q (%s) has already been run\n", toolCall.ID, toolCall.Name)
 		}
 	}
 
-	t := toolbox.Get(toolCall.Function.Name)
+	t := toolbox.Get(toolCall.Name)
 	runner := tool.NewRunner(toolbox, func(status string) {
 		updateChan <- ToolStatusUpdate{Status: status, Tool: t}
 	})
 
-	result := toolbox.Run(runner, toolCall.Function.Name, json.RawMessage(toolCall.Function.Arguments))
+	result := toolbox.Run(runner, toolCall.Name, json.RawMessage(toolCall.Arguments))
 	updateChan <- ToolDoneUpdate{Result: result, Tool: t}
 
 	// Explicitly stating that the result is empty reduces hallucinations.

@@ -14,6 +14,7 @@ import (
 	"github.com/blixt/first-aid/chromecontrol"
 	"github.com/blixt/first-aid/firstaid"
 	"github.com/blixt/first-aid/llm"
+	"github.com/blixt/first-aid/llm/openai"
 	"github.com/blixt/first-aid/writer"
 )
 
@@ -22,14 +23,8 @@ func main() {
 		panic(err)
 	}
 
-	const (
-		model      = "gpt-4o"
-		inputCost  = 5  // per million tokens
-		outputCost = 15 // per million tokens
-	)
-
-	gpt4o := llm.New(
-		model,
+	ai := llm.New(
+		openai.New("gpt-4o"),
 		firstaid.ListFiles,
 		firstaid.LookAtImage,
 		firstaid.LookAtRealWorld,
@@ -39,7 +34,7 @@ func main() {
 		firstaid.SpeakOutLoud,
 	)
 
-	gpt4o.SystemPrompt = func() llm.Content {
+	ai.SystemPrompt = func() llm.Content {
 		var scratchpad string
 		if data, err := os.ReadFile(".first-aid"); err == nil {
 			scratchpad = fmt.Sprintf("There is a .first-aid file in the current directory containing %d lines.", countLines(data))
@@ -74,16 +69,16 @@ func main() {
 	}
 
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
-		gpt4o.AddTool(firstaid.TakeScreenshot)
+		ai.AddTool(firstaid.TakeScreenshot)
 	}
 	if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
-		gpt4o.AddTool(firstaid.RunShellCmd)
+		ai.AddTool(firstaid.RunShellCmd)
 	}
 	if runtime.GOOS == "darwin" {
-		gpt4o.AddTool(firstaid.RunAppleScript)
+		ai.AddTool(firstaid.RunAppleScript)
 	}
 	if runtime.GOOS == "windows" {
-		gpt4o.AddTool(firstaid.RunPowerShellCmd)
+		ai.AddTool(firstaid.RunPowerShellCmd)
 	}
 
 	// Set up a server for the accompanying Google Chrome Extension to connect
@@ -93,7 +88,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to start WebSocket server: %v", err))
 	}
 	defer chromeServer.Close()
-	chromeServer.AddToolsToLLM(gpt4o)
+	chromeServer.AddToolsToLLM(ai)
 
 	// The liner package makes the input prompt a lot nicer to use, supporting
 	// arrow keys and common keyboard shortcuts.
@@ -126,7 +121,7 @@ func main() {
 			defer w.Done()
 			hasAddedText := false
 			hasAddedTool := false
-			for update := range gpt4o.Chat(input) {
+			for update := range ai.Chat(input) {
 				switch update := update.(type) {
 				case llm.ErrorUpdate:
 					panic(update.Error)
@@ -169,10 +164,7 @@ func main() {
 		input = getInput()
 	}
 
-	inputTokens, outputTokens := gpt4o.Usage()
-	totalCost := float64(inputTokens)*(inputCost/1_000_000.) + float64(outputTokens)*(outputCost/1_000_000.)
-
-	writer.Write(fmt.Sprintf("OpenAI thanks you for the $%.2f. Bye!", totalCost))
+	writer.Write(fmt.Sprintf("OpenAI thanks you for the $%.2f. Bye!", ai.TotalCost()))
 }
 
 func getOS() string {

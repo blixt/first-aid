@@ -46,7 +46,8 @@ func expandPath(path string) string {
 	}
 	path = os.ExpandEnv(path)
 	// Prefer a relative path when it goes deeper into the current directory.
-	relPath, err := filepath.Rel(os.TempDir(), path)
+	cwd, _ := os.Getwd()
+	relPath, err := filepath.Rel(cwd, path)
 	if err != nil || relPath == ".." || strings.HasPrefix(relPath, "../") {
 		return path
 	}
