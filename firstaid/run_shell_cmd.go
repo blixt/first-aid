@@ -36,5 +36,5 @@ var RunShellCmd = tool.Func(
 			}
 			return tool.Success(p.Command, fmt.Sprintf("(The output was %s, %d bytes, so too long to fit here. It's been saved to %q. Prefer to immediately read the most relevant parts of this file instead of telling the user about it.)", FirstLineBytes(output), len(output), tmpDstFile.Name()))
 		}
-		return tool.Success(p.Command, FirstLineBytes(output))
+		return tool.Success(p.Command, string(output))
 	})
