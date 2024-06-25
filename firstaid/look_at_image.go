@@ -24,7 +24,12 @@ var LookAtImage = tool.Func(
 			return tool.Error(label, fmt.Errorf("file does not exist: %s", p.Path))
 		}
 		var rb tool.ResultBuilder
-		rb.AddImage(p.Path, p.HighQuality)
-		return rb.Success(label, fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(p.Path)))
+		if err := rb.AddImage(p.Path, p.HighQuality); err != nil {
+			return tool.Error(label, err)
+		}
+		content := map[string]string{
+			"message": fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(p.Path)),
+		}
+		return rb.Success(label, content)
 	},
 )

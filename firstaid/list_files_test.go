@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/blixt/first-aid/firstaid"
 	"github.com/blixt/first-aid/tool"
@@ -15,19 +17,17 @@ import (
 func TestListFiles(t *testing.T) {
 	// Setup a temporary directory with files and subdirectories
 	tempDir := t.TempDir()
-	os.Mkdir(filepath.Join(tempDir, "subdir"), 0755)
-	os.Mkdir(filepath.Join(tempDir, "subdir", "subsubdir"), 0755)
-	os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("line1\nline2\n"), 0644)
-	os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644)
-	os.WriteFile(filepath.Join(tempDir, "subdir", "subsubdir", "file3.txt"), []byte("line1\nline2\nline3\nline4\n"), 0644)
+	require.NoError(t, os.Mkdir(filepath.Join(tempDir, "subdir"), 0755))
+	require.NoError(t, os.Mkdir(filepath.Join(tempDir, "subdir", "subsubdir"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("line1\nline2\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "subsubdir", "file3.txt"), []byte("line1\nline2\nline3\nline4\n"), 0644))
 
 	result := firstaid.ListFiles.Run(tool.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
 
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
+	require.NoError(t, result.Error())
 
-	expected := map[string]firstaid.FileInfo{
+	expectedItems := map[string]firstaid.FileInfo{
 		"file1.txt": {
 			Type:  "file",
 			Lines: 2,
@@ -47,12 +47,19 @@ func TestListFiles(t *testing.T) {
 		},
 	}
 
-	var actual map[string]firstaid.FileInfo
-	if err := json.Unmarshal([]byte(result.String()), &actual); err != nil {
-		t.Fatalf("Failed to unmarshal result: %v", err)
+	expectedResult := map[string]any{
+		"items":        expectedItems,
+		"totalEntries": 4,
 	}
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("Expected result:\n%v\nGot:\n%v", expected, actual)
-	}
+	var actual map[string]any
+	err := json.Unmarshal(result.JSON(), &actual)
+	require.NoError(t, err)
+
+	expectedJSON, err := json.Marshal(expectedResult)
+	require.NoError(t, err)
+	actualJSON, err := json.Marshal(actual)
+	require.NoError(t, err)
+
+	assert.JSONEq(t, string(expectedJSON), string(actualJSON))
 }

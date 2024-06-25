@@ -34,7 +34,16 @@ var RunShellCmd = tool.Func(
 			if err != nil {
 				return tool.Error(p.Command, err)
 			}
-			return tool.Success(p.Command, fmt.Sprintf("(The output was %s, %d bytes, so too long to fit here. It's been saved to %q. Prefer to immediately read the most relevant parts of this file instead of telling the user about it.)", FirstLineBytes(output), len(output), tmpDstFile.Name()))
+			return tool.Success(p.Command, map[string]any{
+				"outputType": "file",
+				"filePath":   tmpDstFile.Name(),
+				"fileSize":   len(output),
+				"firstLine":  FirstLineBytes(output),
+				"note":       "The output was too long to fit here. It's been saved to a file. Prefer to immediately read the most relevant parts of this file instead of telling the user about it.",
+			})
 		}
-		return tool.Success(p.Command, string(output))
+		return tool.Success(p.Command, map[string]any{
+			"outputType": "text",
+			"output":     string(output),
+		})
 	})

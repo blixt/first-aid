@@ -8,11 +8,6 @@ import (
 	"strings"
 )
 
-type Schema struct {
-	Type     string         `json:"type"`
-	Function FunctionSchema `json:"function"`
-}
-
 type FunctionSchema struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
@@ -31,15 +26,12 @@ type ValueSchema struct {
 }
 
 // generateSchema initializes and returns the main structure of a function's JSON Schema
-func generateSchema(name, description string, typ reflect.Type) *Schema {
+func generateSchema(name, description string, typ reflect.Type) FunctionSchema {
 	parameters := generateObjectSchema(typ)
-	return &Schema{
-		Type: "function",
-		Function: FunctionSchema{
-			Name:        name,
-			Description: description,
-			Parameters:  parameters,
-		},
+	return FunctionSchema{
+		Name:        name,
+		Description: description,
+		Parameters:  parameters,
 	}
 }
 
@@ -107,8 +99,8 @@ func generateObjectSchema(typ reflect.Type) ValueSchema {
 }
 
 // validateJSON checks if jsonData conforms to the structure defined in the schema from generateSchema
-func validateJSON(schema *Schema, jsonData json.RawMessage) error {
-	return validateParameters(schema.Function.Parameters, jsonData)
+func validateJSON(schema *FunctionSchema, jsonData json.RawMessage) error {
+	return validateParameters(schema.Parameters, jsonData)
 }
 
 // validateParameters validates JSON data against the provided parameters schema

@@ -2,7 +2,6 @@ package firstaid
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -87,14 +86,13 @@ var ListFiles = tool.Func(
 		if err != nil {
 			return tool.Error(label, err)
 		}
-		jsonData, err := json.Marshal(items)
-		if err != nil {
-			return tool.Error(label, err)
+		result := map[string]any{
+			"items":        items,
+			"totalEntries": entries,
 		}
-		jsonDataString := string(jsonData)
 		if entries > 1_000 {
-			jsonDataString += fmt.Sprintf("\n// There were %d entries, but we could only include 1000.", entries)
+			result["note"] = fmt.Sprintf("There were %d entries, but we could only include 1000.", entries)
 		}
-		return tool.Success(label, jsonDataString)
+		return tool.Success(label, result)
 	},
 )

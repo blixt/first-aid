@@ -15,5 +15,6 @@ type ProviderStream interface {
 }
 
 type Provider interface {
+	Company() string
 	Generate(systemPrompt Content, messages []Message, tools *tool.Toolbox) ProviderStream
 }

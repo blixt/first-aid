@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/blixt/first-aid/tool"
 )
@@ -27,9 +26,6 @@ var SliceFile = tool.Func(
 			return tool.Error(p.Path, fmt.Errorf("failed to open file: %v", err))
 		}
 		defer file.Close()
-
-		var result strings.Builder
-		result.WriteString(fmt.Sprintf("// Below are the sliced lines of %q as an array. The number in each comment is the zero-based index of the string after it.\n[\n", p.Path))
 
 		var lines []string
 		scanner := bufio.NewScanner(file)
@@ -58,16 +54,20 @@ var SliceFile = tool.Func(
 		}
 
 		// Slice the lines
+		slicedLines := make([]map[string]string, 0, end-start)
 		for i := start; i < end; i++ {
 			line := lines[i]
-			result.WriteString(fmt.Sprintf("  /*%d:*/%q,\n", i, line))
+			slicedLines = append(slicedLines, map[string]string{
+				fmt.Sprintf("%d", i): line,
+			})
 		}
-
 		remainingLines := len(lines) - end
-		if remainingLines > 0 {
-			result.WriteString(fmt.Sprintf("  // There's %s more after this.\n", line(remainingLines)))
+
+		result := map[string]any{
+			"filePath":       p.Path,
+			"slicedLines":    slicedLines,
+			"remainingLines": remainingLines,
 		}
-		result.WriteString("]")
 
 		var description string
 		if end-start < 1 {
@@ -77,5 +77,5 @@ var SliceFile = tool.Func(
 		} else {
 			description = fmt.Sprintf("Read lines %d-%d from %q", start+1, end, p.Path)
 		}
-		return tool.Success(description, result.String())
+		return tool.Success(description, result)
 	})

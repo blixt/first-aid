@@ -32,7 +32,7 @@ go mod download
 OPENAI_API_KEY=... go run main.go
 ```
 
-You can also `go install .` to add `first-aid` to your PATH if you're so inclined.
+You can also `go install .` to add `first-aid` to your PATH if you’re so inclined.
 
 ## Intended use cases for this tool
 
@@ -114,7 +114,7 @@ var RunPowerShellCmd = tool.Func(
         if err != nil {
             return tool.Error(p.Command, fmt.Errorf("%w: %s", err, firstLineBytes(output)))
         }
-        return tool.Success(p.Command, string(output))
+        return tool.Success(p.Command, map[string]any{"output": string(output)})
     })
 ```
 
@@ -144,7 +144,7 @@ toolbox := tool.Box(
     mypkg.RunPython,
 )
 
-schema := toolbox.Schema() // Can be used directly for "tools" in OpenAI's API
+schema := openai.Tools(toolbox) // Can be used directly for "tools" in OpenAI's API
 
 // The function name and JSON arguments can be used directly from "tool_calls"
 arguments := json.RawMessage(`{"code":"print('hi')"}`)
@@ -170,7 +170,7 @@ var rb tool.ResultBuilder
 rb.AddImage(screenshotPath)
 return rb.Success(
     "Take screenshot",
-    fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(screenshotPath)),
+    map[string]any{"screenshotFileName": filepath.Base(screenshotPath)},
 )
 ```
 
@@ -248,21 +248,22 @@ with the results of those tool calls.
 
 ```go
 func main() {
-    gpt4o := llm.New(
-        openai.New("gpt-4o"),
+    model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
+    ai := llm.New(
+        model,
         mypkg.ListFiles,
         mypkg.RunPowerShellCmd,
         mypkg.RunPython,
     )
 
     // System prompt is dynamic so it can always be up-to-date.
-    gpt4o.SystemPrompt = func() llm.Content {
+    ai.SystemPrompt = func() llm.Content {
         prompt := fmt.Sprintf("You're a helpful bot. The time is %s.", time.Now().Format(time.RFC1123))
         return llm.Text(prompt)
     }
 
     // Chat returns a channel of updates.
-    for update := range gpt4o.Chat("Give me a random number") {
+    for update := range ai.Chat("Give me a random number") {
         switch update := update.(type) {
         case llm.ErrorUpdate:
             panic(update.Error)
@@ -286,6 +287,15 @@ Example output:
 (Run Python: `import random` (+1 line))
 Here's a random number for you: **48**.
 ```
+
+If you want to use Google’s Gemini 1.5 Pro instead, it’s easy:
+
+```go
+model := google.New("gemini-1.5-pro-001").
+    WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
+```
+
+You can use `WithVertexAI(…)` instead if you have a project set up for it.
 
 ## A quote from the tool itself
 

@@ -2,6 +2,7 @@ package tool
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -16,29 +17,26 @@ import (
 type Result interface {
 	// Label returns a short single line description of the entire tool run.
 	Label() string
-	// String returns a string representation of the result.
-	String() string
+	// JSON returns the JSON representation of the result.
+	JSON() json.RawMessage
 	// Error returns the error that occurred during the tool run, if any.
 	Error() error
 	// Images returns a slice of base64 encoded images.
 	Images() []Image
-	// NextToolbox returns a toolbox that will be used to handle this result.
-	NextToolbox() *Toolbox
 }
 
 type result struct {
-	label       string
-	content     string
-	err         error
-	images      []Image
-	nextToolbox *Toolbox
+	label   string
+	content json.RawMessage
+	err     error
+	images  []Image
 }
 
 func (r *result) Label() string {
 	return r.label
 }
 
-func (r *result) String() string {
+func (r *result) JSON() json.RawMessage {
 	return r.content
 }
 
@@ -50,21 +48,25 @@ func (r *result) Images() []Image {
 	return r.images
 }
 
-func (r *result) NextToolbox() *Toolbox {
-	return r.nextToolbox
-}
-
 func Error(label string, err error) Result {
-	return &result{label, fmt.Sprintf("ERROR: %s", err), err, nil, nil}
+	content := json.RawMessage(fmt.Sprintf("{\"error\": %q}", err))
+	return &result{label, content, err, nil}
 }
 
-func Success(label, content string) Result {
-	return &result{label, content, nil, nil, nil}
+func Success(label string, content any) Result {
+	jsonContent, err := json.Marshal(content)
+	if err != nil {
+		return Error(label, err)
+	}
+	return &result{label, jsonContent, nil, nil}
+}
+
+func SuccessJSON(label string, content json.RawMessage) Result {
+	return &result{label, content, nil, nil}
 }
 
 type ResultBuilder struct {
-	images      []Image
-	nextToolbox *Toolbox
+	images []Image
 }
 
 type Image struct {
@@ -141,14 +143,19 @@ func (b *ResultBuilder) AddImageURL(name, dataURI string) error {
 	return nil
 }
 
-func (b *ResultBuilder) Toolbox(toolbox *Toolbox) {
-	b.nextToolbox = toolbox
-}
-
 func (b *ResultBuilder) Error(label string, err error) Result {
-	return &result{label, fmt.Sprintf("ERROR: %s", err), err, b.images, b.nextToolbox}
+	content := json.RawMessage(fmt.Sprintf("{\"error\": %q}", err))
+	return &result{label, content, err, b.images}
 }
 
-func (b *ResultBuilder) Success(label, content string) Result {
-	return &result{label, content, nil, b.images, b.nextToolbox}
+func (b *ResultBuilder) Success(label string, content any) Result {
+	jsonContent, err := json.Marshal(content)
+	if err != nil {
+		return b.Error(label, err)
+	}
+	return &result{label, jsonContent, nil, b.images}
+}
+
+func (b *ResultBuilder) SuccessJSON(label string, content json.RawMessage) Result {
+	return &result{label, content, nil, b.images}
 }

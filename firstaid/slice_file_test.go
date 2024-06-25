@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/blixt/first-aid/tool"
 )
@@ -15,7 +16,7 @@ func TestSliceFile(t *testing.T) {
 		name     string
 		content  string
 		params   SliceFileParams
-		expected func(string) string
+		expected map[string]any
 	}{
 		{
 			name: "Read entire file",
@@ -27,15 +28,15 @@ Line 5`,
 			params: SliceFileParams{
 				Start: 0,
 			},
-			expected: func(path string) string {
-				return `// Below are the sliced lines of "` + path + `" as an array. The number in each comment is the zero-based index of the string after it.
-[
-  /*0:*/"Line 1",
-  /*1:*/"Line 2",
-  /*2:*/"Line 3",
-  /*3:*/"Line 4",
-  /*4:*/"Line 5",
-]`
+			expected: map[string]any{
+				"slicedLines": []map[string]any{
+					{"0": "Line 1"},
+					{"1": "Line 2"},
+					{"2": "Line 3"},
+					{"3": "Line 4"},
+					{"4": "Line 5"},
+				},
+				"remainingLines": 0,
 			},
 		},
 		{
@@ -48,13 +49,13 @@ Line 5`,
 			params: SliceFileParams{
 				Start: 2,
 			},
-			expected: func(path string) string {
-				return `// Below are the sliced lines of "` + path + `" as an array. The number in each comment is the zero-based index of the string after it.
-[
-  /*2:*/"Line 3",
-  /*3:*/"Line 4",
-  /*4:*/"Line 5",
-]`
+			expected: map[string]any{
+				"slicedLines": []map[string]any{
+					{"2": "Line 3"},
+					{"3": "Line 4"},
+					{"4": "Line 5"},
+				},
+				"remainingLines": 0,
 			},
 		},
 		{
@@ -68,13 +69,12 @@ Line 5`,
 				Start: 1,
 				End:   intptr(3),
 			},
-			expected: func(path string) string {
-				return `// Below are the sliced lines of "` + path + `" as an array. The number in each comment is the zero-based index of the string after it.
-[
-  /*1:*/"Line 2",
-  /*2:*/"Line 3",
-  // There's 2 lines more after this.
-]`
+			expected: map[string]any{
+				"slicedLines": []map[string]any{
+					{"1": "Line 2"},
+					{"2": "Line 3"},
+				},
+				"remainingLines": 2,
 			},
 		},
 		{
@@ -87,12 +87,12 @@ Line 5`,
 			params: SliceFileParams{
 				Start: -2,
 			},
-			expected: func(path string) string {
-				return `// Below are the sliced lines of "` + path + `" as an array. The number in each comment is the zero-based index of the string after it.
-[
-  /*3:*/"Line 4",
-  /*4:*/"Line 5",
-]`
+			expected: map[string]any{
+				"slicedLines": []map[string]any{
+					{"3": "Line 4"},
+					{"4": "Line 5"},
+				},
+				"remainingLines": 0,
 			},
 		},
 	}
@@ -101,31 +101,33 @@ Line 5`,
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			tmpFile, err := os.CreateTemp(tmpDir, "testfile-*.txt")
-			if err != nil {
-				t.Fatalf("failed to create temp file: %v", err)
-			}
+			require.NoError(t, err, "Failed to create temp file")
 			defer os.Remove(tmpFile.Name())
 
-			if _, err := tmpFile.WriteString(tt.content); err != nil {
-				t.Fatalf("failed to write to temp file: %v", err)
-			}
-			if err := tmpFile.Close(); err != nil {
-				t.Fatalf("failed to close temp file: %v", err)
-			}
+			_, err = tmpFile.WriteString(tt.content)
+			require.NoError(t, err, "Failed to write to temp file")
+			require.NoError(t, tmpFile.Close(), "Failed to close temp file")
 
 			params := tt.params
 			params.Path = tmpFile.Name()
 
 			paramsJSON, err := json.Marshal(params)
-			if err != nil {
-				t.Fatalf("failed to marshal params: %v", err)
-			}
+			require.NoError(t, err, "Failed to marshal params")
+
 			result := SliceFile.Run(tool.NopRunner, paramsJSON)
-			if result.Error() != nil {
-				t.Fatalf("unexpected error: %v", result.Error())
+			require.NoError(t, result.Error(), "Unexpected error")
+
+			// Create a copy of tt.expected and add filePath to it
+			expected := make(map[string]any)
+			for k, v := range tt.expected {
+				expected[k] = v
 			}
-			expected := tt.expected(tmpFile.Name())
-			assert.Equal(t, expected, result.String())
+			expected["filePath"] = tmpFile.Name()
+
+			expectedJSON, err := json.Marshal(expected)
+			require.NoError(t, err, "Failed to marshal expected result")
+
+			assert.JSONEq(t, string(expectedJSON), string(result.JSON()), "Result mismatch")
 		})
 	}
 }

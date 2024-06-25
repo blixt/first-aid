@@ -29,6 +29,14 @@ func (t *Toolbox) Add(tool Tool) {
 	t.tools[funcName] = tool
 }
 
+func (t *Toolbox) All() []Tool {
+	tools := []Tool{}
+	for _, tool := range t.tools {
+		tools = append(tools, tool)
+	}
+	return tools
+}
+
 // Get returns the tool with the given function name.
 func (t *Toolbox) Get(funcName string) Tool {
 	return t.tools[funcName]
@@ -42,13 +50,4 @@ func (t *Toolbox) Run(r Runner, funcName string, params json.RawMessage) Result 
 		return Error(err.Error(), err)
 	}
 	return tool.Run(r, params)
-}
-
-// Schema returns the JSON schema for all tools in the toolbox.
-func (t *Toolbox) Schema() []Schema {
-	tools := []Schema{}
-	for _, tool := range t.tools {
-		tools = append(tools, *tool.Schema())
-	}
-	return tools
 }

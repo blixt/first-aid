@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Params defines a struct type with various fields for testing tool functionality.
@@ -22,113 +25,130 @@ func TestGenerateSchema(t *testing.T) {
 	schema := generateSchema("TestFunction", "Test function description", typ)
 
 	expectedSchema := map[string]any{
-		"type": "function",
-		"function": map[string]any{
-			"name":        "TestFunction",
-			"description": "Test function description",
-			"parameters": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"name":    map[string]any{"type": "string"},
-					"age":     map[string]any{"type": "integer"},
-					"email":   map[string]any{"type": "string"}, // Email is optional
-					"isAdmin": map[string]any{"type": "boolean"},
-				},
-				"required": []any{"name", "age", "isAdmin"}, // Email is not required due to omitempty
+		"name":        "TestFunction",
+		"description": "Test function description",
+		"parameters": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"name":    map[string]any{"type": "string"},
+				"age":     map[string]any{"type": "integer"},
+				"email":   map[string]any{"type": "string"}, // Email is optional
+				"isAdmin": map[string]any{"type": "boolean"},
 			},
+			"required": []string{"name", "age", "isAdmin"}, // Email is not required due to omitempty
 		},
 	}
 
-	var unmarshaledSchema map[string]any
-	schemaJSON, _ := json.Marshal(schema)
-	_ = json.Unmarshal(schemaJSON, &unmarshaledSchema)
-	if !reflect.DeepEqual(unmarshaledSchema, expectedSchema) {
-		t.Errorf("Expected schema:\n%#v\nGot:\n%#v", expectedSchema, unmarshaledSchema)
-	}
+	schemaJSON, err := json.Marshal(schema)
+	require.NoError(t, err, "Failed to marshal generated schema")
+
+	expectedSchemaJSON, err := json.Marshal(expectedSchema)
+	require.NoError(t, err, "Failed to marshal expected schema")
+
+	var schemaMap, expectedSchemaMap map[string]any
+	err = json.Unmarshal(schemaJSON, &schemaMap)
+	require.NoError(t, err, "Failed to unmarshal generated schema")
+	err = json.Unmarshal(expectedSchemaJSON, &expectedSchemaMap)
+	require.NoError(t, err, "Failed to unmarshal expected schema")
+
+	assert.Equal(t, expectedSchemaMap, schemaMap, "Generated schema does not match expected schema")
 }
 
 // TestToolRun_CorrectData verifies that the tool functions correctly with valid input data.
 func TestToolRun_CorrectData(t *testing.T) {
 	testFunc := func(r Runner, p Params) Result {
-		return Success("Test", fmt.Sprintf("Profile: %s, %d, %s, Admin: %t", p.Name, p.Age, p.Email, p.IsAdmin))
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Test Tool", "Test function for Params", "test_tool", testFunc)
 
 	params := json.RawMessage(`{"name":"Bob", "age":30, "email":"bob@example.com", "isAdmin":false}`)
 	result := tool.Run(&runner{}, params)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
-	expectedResult := "Profile: Bob, 30, bob@example.com, Admin: false"
-	if result.String() != expectedResult {
-		t.Errorf("Expected result %q, got %q", expectedResult, result.String())
-	}
+
+	require.NoError(t, result.Error(), "Expected no error")
+	assert.JSONEq(t, `{"name":"Bob","age":30,"email":"bob@example.com","isAdmin":false}`, string(result.JSON()))
 }
 
 // TestToolRun_OptionalFieldAbsent verifies that the tool handles the absence of optional fields correctly.
 func TestToolRun_OptionalFieldAbsent(t *testing.T) {
 	testFunc := func(r Runner, p Params) Result {
-		return Success("Test", fmt.Sprintf("Name: %s, Age: %d, Email: %s", p.Name, p.Age, p.Email))
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Test Tool", "Test function for Params", "test_tool", testFunc)
 
 	params := json.RawMessage(`{"name":"Alice", "age":28, "isAdmin":true}`)
 	result := tool.Run(&runner{}, params)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
-	expectedResult := "Name: Alice, Age: 28, Email: "
-	if result.String() != expectedResult {
-		t.Errorf("Expected result %q, got %q", expectedResult, result.String())
-	}
+
+	require.NoError(t, result.Error(), "Expected no error")
+	assert.JSONEq(t, `{"name":"Alice","age":28,"email":"","isAdmin":true}`, string(result.JSON()))
 }
 
 // TestToolRun_MissingRequiredField verifies that the tool correctly handles missing required fields.
 func TestToolRun_MissingRequiredField(t *testing.T) {
 	testFunc := func(r Runner, p Params) Result {
-		return Success("Test", fmt.Sprintf("Received: Name: %s, Age: %d", p.Name, p.Age))
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Test Tool", "Test function for Params", "test_tool", testFunc)
 
 	params := json.RawMessage(`{"name":"John"}`) // Missing 'age' and 'isAdmin', which are required
 	result := tool.Run(&runner{}, params)
-	if err := result.Error(); err == nil || !strings.Contains(err.Error(), "missing required field") {
-		t.Fatalf("Expected an error for missing required fields 'age' and 'isAdmin', but got: %v", err)
-	}
+
+	assert.Error(t, result.Error(), "Expected an error for missing required fields")
+	assert.Contains(t, result.Error().Error(), "missing required field", "Error should mention missing required field")
 }
 
 // TestToolRun_InvalidDataType checks that the tool correctly identifies incorrect data types in input.
 func TestToolRun_InvalidDataType(t *testing.T) {
 	testFunc := func(r Runner, p Params) Result {
-		return Success("Test", "")
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Test Tool", "Test function for Params", "test_tool", testFunc)
 
 	// Invalid data type for 'isAdmin', expecting a boolean but providing a string
 	params := json.RawMessage(`{"name":"Alice", "age":28, "isAdmin":"yes"}`)
 	result := tool.Run(&runner{}, params)
-	if err := result.Error(); err == nil || !strings.Contains(err.Error(), "type mismatch") {
-		t.Fatalf("Expected a type mismatch error for 'isAdmin', but got: %v", err)
-	}
+
+	assert.Error(t, result.Error(), "Expected a type mismatch error")
+	assert.Contains(t, result.Error().Error(), "type mismatch", "Error should mention type mismatch")
 }
 
 // TestToolRun_UnexpectedFields verifies that the tool ignores fields that are not defined in the schema.
 func TestToolRun_UnexpectedFields(t *testing.T) {
 	testFunc := func(r Runner, p Params) Result {
-		return Success("Test", fmt.Sprintf("Name: %s", p.Name))
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Test Tool", "Test function for Params", "test_tool", testFunc)
 
 	// Including an unexpected 'location' field
 	params := json.RawMessage(`{"name":"Alice", "age":28, "isAdmin":true, "location":"unknown"}`)
 	result := tool.Run(&runner{}, params)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error for unexpected field, got %v", result.Error())
-	}
-	expectedResult := "Name: Alice"
-	if result.String() != expectedResult {
-		t.Errorf("Expected result %q, got %q", expectedResult, result.String())
-	}
+
+	require.NoError(t, result.Error(), "Expected no error for unexpected field")
+	assert.JSONEq(t, `{"name":"Alice","age":28,"email":"","isAdmin":true}`, string(result.JSON()))
 }
 
 type AdvancedParams struct {
@@ -143,27 +163,29 @@ type AdvancedParams struct {
 // TestValidateJSONWithArrayAndObject tests validation of both array and nested object fields.
 func TestValidateJSONWithArrayAndObject(t *testing.T) {
 	testFunc := func(r Runner, p AdvancedParams) Result {
-		return Success("Test", fmt.Sprintf("ID: %d, Features: %v, Profile: %s, Active: %t", p.ID, p.Features, p.Profile.Username, p.Profile.Active))
+		return Success("Test", map[string]any{
+			"id":       p.ID,
+			"features": p.Features,
+			"profile":  p.Profile,
+		})
 	}
 	tool := Func("Advanced Tool", "Test function for Advanced Params", "advanced_tool", testFunc)
 
-	// Valid input JSON that includes array and nested object
-	validParams := json.RawMessage(`{"id":101, "features":["fast", "reliable", "secure"], "profile":{"username":"user01", "active":true}}`)
-	result := tool.Run(&runner{}, validParams)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
-	expectedResult := "ID: 101, Features: [fast reliable secure], Profile: user01, Active: true"
-	if result.String() != expectedResult {
-		t.Errorf("Expected result %q, got %q", expectedResult, result.String())
-	}
+	t.Run("Valid Input", func(t *testing.T) {
+		validParams := json.RawMessage(`{"id":101, "features":["fast", "reliable", "secure"], "profile":{"username":"user01", "active":true}}`)
+		result := tool.Run(&runner{}, validParams)
 
-	// Invalid input JSON that has wrong data types in the array and nested object
-	invalidParams := json.RawMessage(`{"id":101, "features":"fast", "profile":{"username":123, "active":"yes"}}`)
-	result = tool.Run(&runner{}, invalidParams)
-	if err := result.Error(); err == nil || !(strings.Contains(err.Error(), "type mismatch") || strings.Contains(err.Error(), "validation error")) {
-		t.Fatalf("Expected a type mismatch or validation error, but got: %v", err)
-	}
+		require.NoError(t, result.Error(), "Expected no error")
+		assert.JSONEq(t, `{"id":101,"features":["fast","reliable","secure"],"profile":{"username":"user01","active":true}}`, string(result.JSON()))
+	})
+
+	t.Run("Invalid Input", func(t *testing.T) {
+		invalidParams := json.RawMessage(`{"id":101, "features":"fast", "profile":{"username":123, "active":"yes"}}`)
+		result := tool.Run(&runner{}, invalidParams)
+
+		assert.Error(t, result.Error(), "Expected a type mismatch or validation error")
+		assert.True(t, strings.Contains(result.Error().Error(), "type mismatch") || strings.Contains(result.Error().Error(), "validation error"))
+	})
 }
 
 func TestToolFunctionErrorHandling(t *testing.T) {
@@ -171,27 +193,29 @@ func TestToolFunctionErrorHandling(t *testing.T) {
 		if p.ID == 0 {
 			return Error("Test", fmt.Errorf("ID cannot be zero"))
 		}
-		return Success("Test", fmt.Sprintf("ID: %d, Features: %v, Profile: %s, Active: %t", p.ID, p.Features, p.Profile.Username, p.Profile.Active))
+		return Success("Test", map[string]any{
+			"id":       p.ID,
+			"features": p.Features,
+			"profile":  p.Profile,
+		})
 	}
 	tool := Func("Error Handling Tool", "Test function for error handling in Params", "error_handling_tool", testFunc)
 
-	// Input JSON with ID set to zero to trigger an error
-	errorParams := json.RawMessage(`{"id":0, "features":["fast", "reliable"], "profile":{"username":"user01", "active":true}}`)
-	result := tool.Run(&runner{}, errorParams)
-	if err := result.Error(); err == nil || !strings.Contains(err.Error(), "ID cannot be zero") {
-		t.Fatalf("Expected error 'ID cannot be zero', but got: %v", err)
-	}
+	t.Run("Error Case", func(t *testing.T) {
+		errorParams := json.RawMessage(`{"id":0, "features":["fast", "reliable"], "profile":{"username":"user01", "active":true}}`)
+		result := tool.Run(&runner{}, errorParams)
 
-	// Valid input JSON to ensure no error is returned
-	validParams := json.RawMessage(`{"id":101, "features":["fast", "reliable"], "profile":{"username":"user01", "active":true}}`)
-	result = tool.Run(&runner{}, validParams)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
-	expectedResult := "ID: 101, Features: [fast reliable], Profile: user01, Active: true"
-	if result.String() != expectedResult {
-		t.Errorf("Expected result %q, got %q", expectedResult, result.String())
-	}
+		assert.Error(t, result.Error(), "Expected error 'ID cannot be zero'")
+		assert.Contains(t, result.Error().Error(), "ID cannot be zero")
+	})
+
+	t.Run("Valid Case", func(t *testing.T) {
+		validParams := json.RawMessage(`{"id":101, "features":["fast", "reliable"], "profile":{"username":"user01", "active":true}}`)
+		result := tool.Run(&runner{}, validParams)
+
+		require.NoError(t, result.Error(), "Expected no error")
+		assert.JSONEq(t, `{"id":101,"features":["fast","reliable"],"profile":{"username":"user01","active":true}}`, string(result.JSON()))
+	})
 }
 
 func TestToolFunctionReport(t *testing.T) {
@@ -199,24 +223,25 @@ func TestToolFunctionReport(t *testing.T) {
 	runner := &runner{
 		report: func(status string) {
 			reportCalled = true
-			if status != "running" {
-				t.Errorf("Expected status %q, got %q", "running", status)
-			}
+			assert.Equal(t, "running", status, "Expected status 'running'")
 		},
 	}
 
 	testFunc := func(r Runner, p Params) Result {
 		r.Report("running")
-		return Success("Test", fmt.Sprintf("Profile: %s, %d, %s, Admin: %t", p.Name, p.Age, p.Email, p.IsAdmin))
+		return Success("Test", map[string]any{
+			"name":    p.Name,
+			"age":     p.Age,
+			"email":   p.Email,
+			"isAdmin": p.IsAdmin,
+		})
 	}
 	tool := Func("Report Tool", "Test function for report functionality", "report_tool", testFunc)
 
 	params := json.RawMessage(`{"name":"Alice", "age":28, "email":"alice@example.com", "isAdmin":true}`)
 	result := tool.Run(runner, params)
-	if result.Error() != nil {
-		t.Fatalf("Expected no error, got %v", result.Error())
-	}
-	if !reportCalled {
-		t.Errorf("Expected report function to be called, but it was not")
-	}
+
+	require.NoError(t, result.Error(), "Expected no error")
+	assert.True(t, reportCalled, "Expected report function to be called")
+	assert.JSONEq(t, `{"name":"Alice","age":28,"email":"alice@example.com","isAdmin":true}`, string(result.JSON()))
 }

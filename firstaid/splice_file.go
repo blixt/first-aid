@@ -76,18 +76,29 @@ var SpliceFile = tool.Func(
 		}
 
 		var description string
+		var action string
 		if p.DeleteCount > 0 && len(p.InsertLines) > 0 {
 			if p.DeleteCount == len(p.InsertLines) {
 				description = fmt.Sprintf("Replaced %s in %q", line(p.DeleteCount), p.Path)
+				action = "replaced"
 			} else {
 				description = fmt.Sprintf("Replaced %s with %s in %q", line(p.DeleteCount), line(len(p.InsertLines)), p.Path)
+				action = "replaced"
 			}
 		} else if p.DeleteCount > 0 {
 			description = fmt.Sprintf("Deleted %s from %q", line(p.DeleteCount), p.Path)
+			action = "deleted"
 		} else if len(p.InsertLines) > 0 {
 			description = fmt.Sprintf("Added %s to %q", line(len(p.InsertLines)), p.Path)
+			action = "added"
 		}
-		return tool.Success(description, "File updated.")
+
+		return tool.Success(description, map[string]interface{}{
+			"path":        p.Path,
+			"action":      action,
+			"deleteCount": p.DeleteCount,
+			"insertCount": len(p.InsertLines),
+		})
 	})
 
 func copyFile(src, dst string) error {

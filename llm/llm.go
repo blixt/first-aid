@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 
 	"sigs.k8s.io/yaml"
 
@@ -95,13 +94,18 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 	var toolMessages []Message
 
 	stream := l.provider.Generate(systemPrompt, l.messages, l.toolbox)
+	if err := stream.Err(); err != nil {
+		return false, fmt.Errorf("LLM returned error response: %w", err)
+	}
 
 	// Write the entire message history to the file debug.yaml. The function is
 	// deferred so that we get data even if a panic occurs.
 	defer func() {
-		var toolsSchema []tool.Schema
+		var toolsSchema []*tool.FunctionSchema
 		if l.toolbox != nil {
-			toolsSchema = l.toolbox.Schema()
+			for _, tool := range l.toolbox.All() {
+				toolsSchema = append(toolsSchema, tool.Schema())
+			}
 		}
 		debugData := map[string]any{
 			// Prefixed with numbers so the keys remain in this order.
@@ -161,10 +165,12 @@ func (l *LLM) step(updateChan chan<- Update) (bool, error) {
 }
 
 func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan chan<- Update) []Message {
-	// As a sanity check, make sure we don't try to run the same tool call twice.
-	for _, message := range l.messages {
-		if message.ToolCallID == toolCall.ID {
-			fmt.Printf("\ntool call %q (%s) has already been run\n", toolCall.ID, toolCall.Name)
+	if toolCall.ID != "" {
+		// As a sanity check, make sure we don't try to run the same tool call twice.
+		for _, message := range l.messages {
+			if message.ToolCallID == toolCall.ID {
+				fmt.Printf("\ntool call %q (%s) has already been run\n", toolCall.ID, toolCall.Name)
+			}
 		}
 	}
 
@@ -176,16 +182,15 @@ func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan c
 	result := toolbox.Run(runner, toolCall.Name, json.RawMessage(toolCall.Arguments))
 	updateChan <- ToolDoneUpdate{Result: result, Tool: t}
 
-	// Explicitly stating that the result is empty reduces hallucinations.
-	content := strings.TrimSpace(result.String())
-	if content == "" {
-		content = "(The tool did not return anything.)"
+	callID := toolCall.ID
+	if callID == "" {
+		callID = toolCall.Name
 	}
 
 	messages := []Message{
 		{
 			Role:       "tool",
-			Content:    Text(content),
+			Content:    ToolResultJSON(callID, result.JSON()),
 			ToolCallID: toolCall.ID,
 		},
 	}

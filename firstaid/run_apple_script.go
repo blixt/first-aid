@@ -30,5 +30,7 @@ var RunAppleScript = tool.Func(
 		if err != nil {
 			return tool.Error(FirstLine(p.ScriptLines), fmt.Errorf("%w: %s", err, output))
 		}
-		return tool.Success(FirstLine(p.ScriptLines), string(output))
+		return tool.Success(FirstLine(p.ScriptLines), map[string]any{
+			"output": string(output),
+		})
 	})

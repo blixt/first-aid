@@ -39,7 +39,14 @@ var TakeScreenshot = tool.Func(
 		defer os.Remove(screenshotPath)
 
 		var rb tool.ResultBuilder
-		rb.AddImage(screenshotPath, true)
-		return rb.Success("Take screenshot", fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(screenshotPath)))
+		if err := rb.AddImage(screenshotPath, true); err != nil {
+			return tool.Error("Take screenshot", fmt.Errorf("failed to add image: %w", err))
+		}
+
+		fileName := filepath.Base(screenshotPath)
+		return rb.Success("Take screenshot", map[string]any{
+			"message":  fmt.Sprintf("You will receive %s from the user as an automated message.", fileName),
+			"fileName": fileName,
+		})
 	},
 )

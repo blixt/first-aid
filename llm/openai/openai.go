@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/blixt/first-aid/llm"
@@ -15,20 +14,35 @@ import (
 )
 
 type Model struct {
-	model string
+	accessToken string
+	model       string
+	endpoint    string
 }
 
-func New(model string) *Model {
-	return &Model{model}
+func New(accessToken, model string) *Model {
+	return &Model{
+		accessToken: accessToken,
+		model:       model,
+		endpoint:    "https://api.openai.com/v1/chat/completions",
+	}
 }
 
-func (p *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
+func (m *Model) WithEndpoint(endpoint string) *Model {
+	m.endpoint = endpoint
+	return m
+}
+
+func (m *Model) Company() string {
+	return "OpenAI"
+}
+
+func (m *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
 	var apiMessages []message
 	if systemPrompt != nil {
 		apiMessages = make([]message, 0, len(messages)+1)
 		apiMessages = append(apiMessages, message{
 			Role:    "system",
-			Content: systemPrompt,
+			Content: contentFromLLM(systemPrompt),
 		})
 	} else {
 		apiMessages = make([]message, 0, len(messages))
@@ -38,14 +52,14 @@ func (p *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools
 	}
 
 	payload := map[string]any{
-		"model":          p.model,
+		"model":          m.model,
 		"messages":       apiMessages,
 		"stream":         true,
 		"stream_options": map[string]any{"include_usage": true},
 	}
 
 	if tools != nil {
-		payload["tools"] = tools.Schema()
+		payload["tools"] = Tools(tools)
 	}
 
 	jsonData, err := json.Marshal(payload)
@@ -53,19 +67,25 @@ func (p *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools
 		return &Stream{err: fmt.Errorf("error encoding JSON: %w", err)}
 	}
 
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(jsonData))
+	req, err := http.NewRequest("POST", m.endpoint, bytes.NewReader(jsonData))
 	if err != nil {
 		return &Stream{err: fmt.Errorf("error creating request: %w", err)}
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OPENAI_API_KEY")))
+	if m.accessToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.accessToken))
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return &Stream{err: fmt.Errorf("error making request: %w", err)}
 	}
+	if resp.StatusCode != http.StatusOK {
+		// TODO: Consider parsing the body for a more specific error.
+		return &Stream{err: fmt.Errorf("%s", resp.Status)}
+	}
 
-	return &Stream{model: p.model, stream: resp.Body, toolbox: tools}
+	return &Stream{model: m.model, stream: resp.Body}
 }
 
 type Stream struct {
@@ -75,7 +95,6 @@ type Stream struct {
 	message  llm.Message
 	lastText string
 	usage    *usage
-	toolbox  *tool.Toolbox
 }
 
 func (s *Stream) Err() error {
@@ -105,6 +124,7 @@ func (s *Stream) CostUSD() float64 {
 		inputTokens, outputTokens := s.Usage()
 		return float64(inputTokens)*inputCost/1e6 + float64(outputTokens)*outputCost/1e6
 	default:
+		// FIXME
 		panic(fmt.Sprintf("unknown model: %q", s.model))
 	}
 }
@@ -121,11 +141,10 @@ func (s *Stream) Iter() func(yield func(llm.StreamStatus) bool) {
 	return func(yield func(llm.StreamStatus) bool) {
 		defer io.Copy(io.Discard, s.stream)
 		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(line, "data: ") {
+			line, ok := strings.CutPrefix(scanner.Text(), "data: ")
+			if !ok {
 				continue
 			}
-			line = strings.TrimPrefix(line, "data: ")
 			if line == "[DONE]" {
 				continue
 			}
@@ -184,4 +203,15 @@ func (s *Stream) Iter() func(yield func(llm.StreamStatus) bool) {
 			}
 		}
 	}
+}
+
+func Tools(toolbox *tool.Toolbox) []Tool {
+	tools := []Tool{}
+	for _, tool := range toolbox.All() {
+		tools = append(tools, Tool{
+			Type:     "function",
+			Function: *tool.Schema(),
+		})
+	}
+	return tools
 }

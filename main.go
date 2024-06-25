@@ -23,8 +23,12 @@ func main() {
 		panic(err)
 	}
 
+	model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
+	// model := google.New("gemini-1.5-pro-001").
+	// 	WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
+
 	ai := llm.New(
-		openai.New("gpt-4o"),
+		model,
 		firstaid.ListFiles,
 		firstaid.LookAtImage,
 		firstaid.LookAtRealWorld,
@@ -178,7 +182,7 @@ func main() {
 		input = getInput()
 	}
 
-	writer.Write(fmt.Sprintf("OpenAI thanks you for the $%.2f. Bye!", ai.TotalCost()))
+	writer.Write(fmt.Sprintf("%s thanks you for the $%.2f. Bye!", model.Company(), ai.TotalCost()))
 }
 
 func getOS() string {

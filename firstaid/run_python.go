@@ -64,7 +64,9 @@ var RunPython = tool.Func(
 		if err != nil {
 			return tool.Error(FirstLine(p.Statements), fmt.Errorf("%w: %s", err, output))
 		}
-		return tool.Success(FirstLine(p.Statements), string(output))
+		return tool.Success(FirstLine(p.Statements), map[string]any{
+			"output": string(output),
+		})
 	})
 
 func findPythonExecutable() string {
