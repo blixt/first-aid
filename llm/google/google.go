@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/llm"
 	"github.com/blixt/first-aid/tool"
 )
@@ -64,7 +65,7 @@ func (m *Model) Company() string {
 	return "Google"
 }
 
-func (m *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
+func (m *Model) Generate(systemPrompt content.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
 	if m.endpoint == "" {
 		return &Stream{err: fmt.Errorf("must call either WithVertexAI(…) or WithGenerativeLanguageAPI(…) first")}
 	}
@@ -103,7 +104,7 @@ func (m *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools
 
 	if systemPrompt != nil {
 		payload["systemInstruction"] = map[string]any{
-			"parts": partsFromLLM(systemPrompt),
+			"parts": convertContent(systemPrompt),
 		}
 	}
 

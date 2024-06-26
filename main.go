@@ -12,6 +12,7 @@ import (
 	"github.com/peterh/liner"
 
 	"github.com/blixt/first-aid/chromecontrol"
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/firstaid"
 	"github.com/blixt/first-aid/llm"
 	"github.com/blixt/first-aid/llm/openai"
@@ -38,7 +39,7 @@ func main() {
 		firstaid.SpeakOutLoud,
 	)
 
-	ai.SystemPrompt = func() llm.Content {
+	ai.SystemPrompt = func() content.Content {
 		var scratchpad string
 		if data, err := os.ReadFile(".first-aid"); err == nil {
 			scratchpad = fmt.Sprintf("There is a .first-aid file in the current directory containing %d lines.", countLines(data))
@@ -83,7 +84,7 @@ func main() {
 			"",
 			"You must always say something after receiving the result from a tool.",
 		}
-		return llm.Text(strings.Join(prompt, "\n"))
+		return content.FromText(strings.Join(prompt, "\n"))
 	}
 
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/llm"
 	"github.com/blixt/first-aid/tool"
 )
@@ -36,13 +37,13 @@ func (m *Model) Company() string {
 	return "OpenAI"
 }
 
-func (m *Model) Generate(systemPrompt llm.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
+func (m *Model) Generate(systemPrompt content.Content, messages []llm.Message, tools *tool.Toolbox) llm.ProviderStream {
 	var apiMessages []message
 	if systemPrompt != nil {
 		apiMessages = make([]message, 0, len(messages)+1)
 		apiMessages = append(apiMessages, message{
 			Role:    "system",
-			Content: contentFromLLM(systemPrompt),
+			Content: convertContent(systemPrompt),
 		})
 	} else {
 		apiMessages = make([]message, 0, len(messages))

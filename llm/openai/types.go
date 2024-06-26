@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/llm"
 	"github.com/blixt/first-aid/tool"
 )
@@ -23,45 +24,45 @@ type contentItem struct {
 	ImageURL *imageURL `json:"image_url,omitempty"`
 }
 
-type content []contentItem
+type contentList []contentItem
 
-func contentFromLLM(llmContent llm.Content) (c content) {
-	for _, item := range llmContent {
+func convertContent(c content.Content) (cl contentList) {
+	for _, item := range c {
 		var ci contentItem
 		switch v := item.(type) {
-		case *llm.TextContent:
+		case *content.Text:
 			ci.Type = "text"
 			text := v.Text
 			ci.Text = &text
-		case *llm.ImageURLContent:
+		case *content.ImageURL:
 			ci.Type = "image_url"
 			ci.ImageURL = &imageURL{URL: v.URL}
-		case *llm.ToolResultContent:
+		case *content.JSON:
 			ci.Type = "text"
 			text := string(v.Data)
 			ci.Text = &text
 		default:
 			panic(fmt.Sprintf("unhandled content item type %T", item))
 		}
-		c = append(c, ci)
+		cl = append(cl, ci)
 	}
-	return c
+	return cl
 }
 
-func (c content) MarshalJSON() ([]byte, error) {
+func (cl contentList) MarshalJSON() ([]byte, error) {
 	// Marshal into a simple string when the only content is one text item.
-	if len(c) == 1 && c[0].Type == "text" {
-		return json.Marshal(c[0].Text)
+	if len(cl) == 1 && cl[0].Type == "text" {
+		return json.Marshal(cl[0].Text)
 	}
 	// Otherwise, directly marshal the content slice.
-	return json.Marshal(c)
+	return json.Marshal([]contentItem(cl))
 }
 
-func (c *content) UnmarshalJSON(data []byte) error {
+func (cl *contentList) UnmarshalJSON(data []byte) error {
 	// Try to unmarshal data as a JSON string first.
 	var text string
 	if err := json.Unmarshal(data, &text); err == nil {
-		*c = content{
+		*cl = contentList{
 			{
 				Type: "text",
 				Text: &text,
@@ -74,7 +75,7 @@ func (c *content) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = content(value)
+	*cl = contentList(value)
 	return nil
 }
 
@@ -84,7 +85,7 @@ type message struct {
 	// Name can be used to identify different identities within the same role.
 	Name string `json:"name,omitempty"`
 	// Content is the message content.
-	Content content `json:"content"`
+	Content contentList `json:"content"`
 	// ToolCalls is the list of tool calls that this message is part of.
 	ToolCalls []toolCall `json:"tool_calls,omitempty"`
 	// ToolCallID is the ID of the tool call that this message is part of.
@@ -103,7 +104,7 @@ func messageFromLLM(m llm.Message) message {
 	return message{
 		Role:       m.Role,
 		Name:       m.Name,
-		Content:    contentFromLLM(m.Content),
+		Content:    convertContent(m.Content),
 		ToolCalls:  toolCalls,
 		ToolCallID: m.ToolCallID,
 	}

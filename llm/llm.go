@@ -8,6 +8,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/tool"
 )
 
@@ -21,7 +22,7 @@ type LLM struct {
 	// SystemPrompt should return the system prompt for the LLM. It's a function
 	// to allow the system prompt to dynamically change throughout a single
 	// conversation.
-	SystemPrompt func() Content
+	SystemPrompt func() content.Content
 }
 
 func New(provider Provider, tools ...tool.Tool) *LLM {
@@ -39,14 +40,14 @@ func New(provider Provider, tools ...tool.Tool) *LLM {
 // which updates will come in. The LLM will use the tools available and keep
 // generating more messages until it's done using tools.
 func (l *LLM) Chat(message string) <-chan Update {
-	return l.ChatUsingContent(Text(message))
+	return l.ChatUsingContent(content.FromText(message))
 }
 
 // ChatUsingContent sends a message (which can contain images) to the LLM and
 // immediately returns a channel over which updates will come in. The LLM will
 // use the tools available and keep generating more messages until it's done
 // using tools.
-func (l *LLM) ChatUsingContent(message Content) <-chan Update {
+func (l *LLM) ChatUsingContent(message content.Content) <-chan Update {
 	l.messages = append(l.messages, Message{
 		Role:    "user",
 		Content: message,
@@ -85,7 +86,7 @@ func (l *LLM) TotalCost() float64 {
 }
 
 func (l *LLM) step(updateChan chan<- Update) (bool, error) {
-	var systemPrompt Content
+	var systemPrompt content.Content
 	if l.SystemPrompt != nil {
 		systemPrompt = l.SystemPrompt()
 	}
@@ -190,8 +191,8 @@ func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan c
 	messages := []Message{
 		{
 			Role:       "tool",
-			Content:    ToolResultJSON(callID, result.JSON()),
-			ToolCallID: toolCall.ID,
+			Content:    content.FromRawJSON(result.JSON()),
+			ToolCallID: callID,
 		},
 	}
 
@@ -201,7 +202,7 @@ func (l *LLM) runToolCall(toolbox *tool.Toolbox, toolCall ToolCall, updateChan c
 		message := Message{
 			Role: "user",
 			// TODO: Support more than one image name.
-			Content: Textf("Here is %s. This is an automated message, not actually from the user.", images[0].Name),
+			Content: content.Textf("Here is %s. This is an automated message, not actually from the user.", images[0].Name),
 		}
 		for _, image := range images {
 			message.Content.AddImage(image.URL)

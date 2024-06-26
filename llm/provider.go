@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/tool"
 )
 
@@ -16,5 +17,5 @@ type ProviderStream interface {
 
 type Provider interface {
 	Company() string
-	Generate(systemPrompt Content, messages []Message, tools *tool.Toolbox) ProviderStream
+	Generate(systemPrompt content.Content, messages []Message, tools *tool.Toolbox) ProviderStream
 }

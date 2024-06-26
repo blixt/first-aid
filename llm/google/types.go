@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/llm"
 )
 
@@ -57,14 +58,39 @@ type part struct {
 
 type parts []part
 
-func partsFromLLM(c llm.Content) (p parts) {
+func createFunctionResponse(name string, c content.Content) *functionResponse {
+	if len(c) == 1 {
+		if jc, ok := c[0].(*content.JSON); ok {
+			return &functionResponse{Name: name, Response: jc.Data}
+		}
+	}
+	var response []any
+	for _, item := range c {
+		switch v := item.(type) {
+		case *content.JSON:
+			response = append(response, v.Data)
+		case *content.Text:
+			response = append(response, v.Text)
+		default:
+			panic(fmt.Sprintf("unhandled content item type %T", item))
+		}
+	}
+	data, err := json.Marshal(response)
+	if err != nil {
+		// TODO: Return a normal error.
+		panic(fmt.Sprintf("failed to marshal function response: %v", err))
+	}
+	return &functionResponse{Name: name, Response: data}
+}
+
+func convertContent(c content.Content) (p parts) {
 	for _, item := range c {
 		var pp part
 		switch v := item.(type) {
-		case *llm.TextContent:
+		case *content.Text:
 			text := v.Text
 			pp.Text = &text
-		case *llm.ImageURLContent:
+		case *content.ImageURL:
 			if dataValue, found := strings.CutPrefix(v.URL, "data:"); found {
 				mimeType, data, found := strings.Cut(dataValue, ";base64,")
 				if !found {
@@ -75,11 +101,9 @@ func partsFromLLM(c llm.Content) (p parts) {
 				// TODO: We are missing MIME type here.
 				pp.FileData = &fileData{FileURI: v.URL}
 			}
-		case *llm.ToolResultContent:
-			pp.FunctionResponse = &functionResponse{
-				Name:     v.CallID,
-				Response: v.Data,
-			}
+		case *content.JSON:
+			text := string(v.Data)
+			pp.Text = &text
 		default:
 			panic(fmt.Sprintf("unhandled content item type %T", item))
 		}
@@ -94,7 +118,7 @@ func (p parts) MarshalJSON() ([]byte, error) {
 		return json.Marshal(p[0])
 	}
 	// Otherwise, directly marshal the parts slice.
-	return json.Marshal(p)
+	return json.Marshal([]part(p))
 }
 
 func (p *parts) UnmarshalJSON(data []byte) error {
@@ -128,9 +152,17 @@ func messageFromLLM(m llm.Message) message {
 	default:
 		role = m.Role
 	}
+	if m.ToolCallID != "" {
+		return message{
+			Role: role,
+			Parts: parts{
+				{FunctionResponse: createFunctionResponse(m.ToolCallID, m.Content)},
+			},
+		}
+	}
 	return message{
 		Role:  role,
-		Parts: partsFromLLM(m.Content),
+		Parts: convertContent(m.Content),
 	}
 }
 
@@ -146,12 +178,12 @@ type streamingResponse struct {
 }
 
 type candidate struct {
-	Content       content        `json:"content"`
-	SafetyRatings []safetyRating `json:"safetyRatings,omitempty"`
-	FinishReason  string         `json:"finishReason,omitempty"`
+	Content       candidateContent `json:"content"`
+	SafetyRatings []safetyRating   `json:"safetyRatings,omitempty"`
+	FinishReason  string           `json:"finishReason,omitempty"`
 }
 
-type content struct {
+type candidateContent struct {
 	Role  string `json:"role"`
 	Parts parts  `json:"parts"`
 }
