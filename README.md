@@ -257,9 +257,8 @@ func main() {
     )
 
     // System prompt is dynamic so it can always be up-to-date.
-    ai.SystemPrompt = func() llm.Content {
-        prompt := fmt.Sprintf("You're a helpful bot. The time is %s.", time.Now().Format(time.RFC1123))
-        return llm.Text(prompt)
+    ai.SystemPrompt = func() content.Content {
+        return content.Textf("You're a helpful bot. The time is %s.", time.Now().Format(time.RFC1123))
     }
 
     // Chat returns a channel of updates.
