@@ -43,7 +43,9 @@ func (j *JSON) Type() Type {
 
 type Content []Item
 
-func FromJSON(value any) (Content, error) {
+// FromAny marshals the given value to JSON and returns a new JSON content item
+// with the marshalled JSON data.
+func FromAny(value any) (Content, error) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
@@ -51,6 +53,7 @@ func FromJSON(value any) (Content, error) {
 	return FromRawJSON(data), nil
 }
 
+// FromRawJSON returns a new JSON content item with the given raw JSON data.
 func FromRawJSON(data json.RawMessage) Content {
 	return Content{
 		&JSON{Data: data},
@@ -69,7 +72,7 @@ func Textf(format string, args ...any) Content {
 	return FromText(fmt.Sprintf(format, args...))
 }
 
-// TextAndImage returns a new content item with the given text and image URL.
+// FromTextAndImage returns a new content item with the given text and image URL.
 func FromTextAndImage(text, imageURL string) Content {
 	return Content{
 		&Text{Text: text},
