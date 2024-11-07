@@ -8,17 +8,17 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type TakeScreenshotParams struct {
 }
 
-var TakeScreenshot = tool.Func(
+var TakeScreenshot = tools.Func(
 	"Take screenshot",
 	"Takes a screenshot of the user's screen. Use this if the user refers to something you can't see.",
 	"take_screenshot",
-	func(r tool.Runner, params TakeScreenshotParams) tool.Result {
+	func(r tools.Runner, params TakeScreenshotParams) tools.Result {
 		// Generate a unique temporary file path for the screenshot.
 		screenshotPath := fmt.Sprintf("%s/screenshot_%d.png", os.TempDir(), time.Now().UnixNano())
 
@@ -30,17 +30,17 @@ var TakeScreenshot = tool.Func(
 			// Command for macOS to take a screenshot.
 			cmd = exec.Command("screencapture", "-x", screenshotPath)
 		} else {
-			return tool.Error("Take screenshot", fmt.Errorf("unsupported platform %s", runtime.GOOS))
+			return tools.Error("Take screenshot", fmt.Errorf("unsupported platform %s", runtime.GOOS))
 		}
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return tool.Error("Take screenshot", fmt.Errorf("%w: %s", err, output))
+			return tools.Error("Take screenshot", fmt.Errorf("%w: %s", err, output))
 		}
 		defer os.Remove(screenshotPath)
 
-		var rb tool.ResultBuilder
+		var rb tools.ResultBuilder
 		if err := rb.AddImage(screenshotPath, true); err != nil {
-			return tool.Error("Take screenshot", fmt.Errorf("failed to add image: %w", err))
+			return tools.Error("Take screenshot", fmt.Errorf("failed to add image: %w", err))
 		}
 
 		fileName := filepath.Base(screenshotPath)

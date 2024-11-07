@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type ListFilesParams struct {
@@ -22,11 +22,11 @@ type FileInfo struct {
 	ContentsSkipped bool   `json:"contentsSkipped,omitempty"`
 }
 
-var ListFiles = tool.Func(
+var ListFiles = tools.Func(
 	"List files",
 	"Lists some of the contents in the specified directory. Don't use this on files. Don't use a depth higher than 2 unless you're really sure.",
 	"list_files",
-	func(r tool.Runner, p ListFilesParams) tool.Result {
+	func(r tools.Runner, p ListFilesParams) tools.Result {
 		if p.Depth < 1 {
 			p.Depth = 1
 		}
@@ -84,7 +84,7 @@ var ListFiles = tool.Func(
 		})
 		label := fmt.Sprintf("List files in `%s`", p.Path)
 		if err != nil {
-			return tool.Error(label, err)
+			return tools.Error(label, err)
 		}
 		result := map[string]any{
 			"items":        items,
@@ -93,6 +93,6 @@ var ListFiles = tool.Func(
 		if entries > 1_000 {
 			result["note"] = fmt.Sprintf("There were %d entries, but we could only include 1000.", entries)
 		}
-		return tool.Success(label, result)
+		return tools.Success(label, result)
 	},
 )

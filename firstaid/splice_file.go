@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type SpliceFileParams struct {
@@ -19,16 +19,16 @@ type SpliceFileParams struct {
 	InsertLines []string `json:"insertLines,omitempty" description:"The lines to insert at the start of the slice."`
 }
 
-var SpliceFile = tool.Func(
+var SpliceFile = tools.Func(
 	"Update file",
 	"Delete and/or replace a slice of the lines in the specified file, if we imagine the file as a zero-indexed array of lines.",
 	"splice_file",
-	func(r tool.Runner, p SpliceFileParams) tool.Result {
+	func(r tools.Runner, p SpliceFileParams) tools.Result {
 		p.Path = expandPath(p.Path)
 		// Open or create the file if it doesn't exist.
 		file, err := os.OpenFile(p.Path, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			return tool.Error(p.Path, fmt.Errorf("failed to open %q: %w", p.Path, err))
+			return tools.Error(p.Path, fmt.Errorf("failed to open %q: %w", p.Path, err))
 		}
 		defer file.Close()
 
@@ -50,12 +50,12 @@ var SpliceFile = tool.Func(
 					result.WriteString(scanner.Text() + "\n")
 				}
 			} else if err := scanner.Err(); err != nil {
-				return tool.Error(p.Path, fmt.Errorf("failed to read file: %w", err))
+				return tools.Error(p.Path, fmt.Errorf("failed to read file: %w", err))
 			} else if i < p.Start {
 				// If we get here it means we reached the end of the file but
 				// the intended insert location is further ahead. We consider
 				// this an erroneous usage of the API.
-				return tool.Error(p.Path, fmt.Errorf("file has less than %d lines", p.Start+1))
+				return tools.Error(p.Path, fmt.Errorf("file has less than %d lines", p.Start+1))
 			} else {
 				// We finished all our work.
 				break
@@ -67,12 +67,12 @@ var SpliceFile = tool.Func(
 		if i > 0 {
 			backupPath := fmt.Sprintf("%s.%d.bak", p.Path, time.Now().Unix())
 			if err := copyFile(p.Path, backupPath); err != nil {
-				return tool.Error(p.Path, fmt.Errorf("failed to create backup: %w", err))
+				return tools.Error(p.Path, fmt.Errorf("failed to create backup: %w", err))
 			}
 		}
 
 		if err := writeFileAtomically(p.Path, strings.NewReader(result.String())); err != nil {
-			return tool.Error(p.Path, fmt.Errorf("failed to write updated content: %w", err))
+			return tools.Error(p.Path, fmt.Errorf("failed to write updated content: %w", err))
 		}
 
 		var description string
@@ -93,7 +93,7 @@ var SpliceFile = tool.Func(
 			action = "added"
 		}
 
-		return tool.Success(description, map[string]interface{}{
+		return tools.Success(description, map[string]interface{}{
 			"path":        p.Path,
 			"action":      action,
 			"deleteCount": p.DeleteCount,

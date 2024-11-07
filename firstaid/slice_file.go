@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type SliceFileParams struct {
@@ -14,16 +14,16 @@ type SliceFileParams struct {
 	End   *int   `json:"end,omitempty" description:"The end index of the slice to get (non-inclusive). If not provided, the entire file from the start index to the end is returned."`
 }
 
-var SliceFile = tool.Func(
+var SliceFile = tools.Func(
 	"Read file",
 	"Read a slice of the lines in the specified file, if we imagine the file as a zero-indexed array of lines. Returns a JavaScript array value where each line is prefixed with its index in this imaginary array as a comment.",
 	"slice_file",
-	func(r tool.Runner, p SliceFileParams) tool.Result {
+	func(r tools.Runner, p SliceFileParams) tools.Result {
 		p.Path = expandPath(p.Path)
 
 		file, err := os.Open(p.Path)
 		if err != nil {
-			return tool.Error(p.Path, fmt.Errorf("failed to open file: %v", err))
+			return tools.Error(p.Path, fmt.Errorf("failed to open file: %v", err))
 		}
 		defer file.Close()
 
@@ -33,7 +33,7 @@ var SliceFile = tool.Func(
 			lines = append(lines, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
-			return tool.Error(p.Path, err)
+			return tools.Error(p.Path, err)
 		}
 
 		// Support a negative start index.
@@ -71,11 +71,11 @@ var SliceFile = tool.Func(
 
 		var description string
 		if end-start < 1 {
-			return tool.Error(p.Path, fmt.Errorf("failed to read line %d from %q", start+1, p.Path))
+			return tools.Error(p.Path, fmt.Errorf("failed to read line %d from %q", start+1, p.Path))
 		} else if start == end-1 {
 			description = fmt.Sprintf("Read line %d from %q", start+1, p.Path)
 		} else {
 			description = fmt.Sprintf("Read lines %d-%d from %q", start+1, end, p.Path)
 		}
-		return tool.Success(description, result)
+		return tools.Success(description, result)
 	})

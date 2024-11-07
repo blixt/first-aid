@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 func TestSliceFile(t *testing.T) {
@@ -114,7 +114,7 @@ Line 5`,
 			paramsJSON, err := json.Marshal(params)
 			require.NoError(t, err, "Failed to marshal params")
 
-			result := SliceFile.Run(tool.NopRunner, paramsJSON)
+			result := SliceFile.Run(tools.NopRunner, paramsJSON)
 			require.NoError(t, result.Error(), "Unexpected error")
 
 			// Create a copy of tt.expected and add filePath to it

@@ -17,10 +17,10 @@ A little help from a reluctant AI on the command line.
   - [Roadmap](#roadmap)
   - [Tool ideas](#tool-ideas)
   - [For developers](#for-developers)
-    - [The `tool` package](#the-tool-package)
+    - [The `tools` package](#the-tools-package)
     - [Tools that return images](#tools-that-return-images)
     - [The `writer`, `serif`, and `spinner` packages](#the-writer-serif-and-spinner-packages)
-    - [The `llm` package](#the-llm-package)
+    - [The `llms` package](#the-llms-package)
   - [A quote from the tool itself](#a-quote-from-the-tool-itself)
 
 ## Usage
@@ -84,9 +84,12 @@ I’m aiming to make this codebase approachable and to contain little pieces of
 code that can be helpful to other people building AI related tools in Go. So
 below I’ll point at a few parts of the codebase I think could be useful.
 
-### The `tool` package
+### The `tools` package
 
-The `tool` package makes it very easy to create tools for the LLM to use. The
+> [!TIP]
+> This code has been moved into a new repository: https://github.com/blixt/go-llms
+
+The `tools` package makes it very easy to create tools for the LLM to use. The
 main goal was the ergonomy of defining a tool. Here’s an example of a tool:
 
 ```go
@@ -96,25 +99,25 @@ import (
     "fmt"
     "os/exec"
 
-    "github.com/blixt/first-aid/tool"
+    "github.com/blixt/go-llms/tools"
 )
 
 type RunPowerShellCmdParams struct {
     Command string `json:"command" description:"The PowerShell command to run"`
 }
 
-var RunPowerShellCmd = tool.Func(
+var RunPowerShellCmd = tools.Func(
     "Run PowerShell command",
     "Run a shell command on the user's computer (a Windows machine) and return the output",
     "run_powershell_cmd",
-    func(r tool.Runner, p RunShellCmdParams) tool.Result {
+    func(r tools.Runner, p RunShellCmdParams) tools.Result {
         // Run the PowerShell command and capture the output or error.
         cmd := exec.Command("powershell", "-Command", p.Command)
         output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
         if err != nil {
-            return tool.Error(p.Command, fmt.Errorf("%w: %s", err, firstLineBytes(output)))
+            return tools.Error(p.Command, fmt.Errorf("%w: %s", err, firstLineBytes(output)))
         }
-        return tool.Success(p.Command, map[string]any{"output": string(output)})
+        return tools.Success(p.Command, map[string]any{"output": string(output)})
     })
 ```
 
@@ -125,7 +128,7 @@ To run the tool with the data received from the LLM:
 
 ```go
 arguments := json.RawMessage(`{"command":"Get-ComputerInfo"}`)
-result := RunPowerShellCmd.Run(tool.NopRunner, arguments)
+result := RunPowerShellCmd.Run(tools.NopRunner, arguments)
 ```
 
 This will parse the JSON into the parameters type, validate it, and call the
@@ -133,12 +136,12 @@ function defined above with the correct parameters.
 
 The API has been optimized to be able to show human readable representations of
 the tool before, during, and after running it, which explains the extra `label`
-value and the `tool.Runner` interface.
+value and the `tools.Runner` interface.
 
 Obviously you usually have more than one tool, and for this we have toolboxes:
 
 ```go
-toolbox := tool.Box(
+toolbox := tools.Box(
     mypkg.ListFiles,
     mypkg.RunPowerShellCmd,
     mypkg.RunPython,
@@ -148,7 +151,7 @@ schema := openai.Tools(toolbox) // Can be used directly for "tools" in OpenAI's 
 
 // The function name and JSON arguments can be used directly from "tool_calls"
 arguments := json.RawMessage(`{"code":"print('hi')"}`)
-result := toolbox.Run(tool.NopRunner, "run_python", arguments)
+result := toolbox.Run(tools.NopRunner, "run_python", arguments)
 ```
 
 ### Tools that return images
@@ -166,7 +169,7 @@ same filename in both so that the LLM will associate the results.
 This is the API for a tool to return an image:
 
 ```go
-var rb tool.ResultBuilder
+var rb tools.ResultBuilder
 rb.AddImage(screenshotPath)
 return rb.Success(
     "Take screenshot",
@@ -240,7 +243,10 @@ func main() {
 
 The speed increases if the unwritten content gets too long.
 
-### The `llm` package
+### The `llms` package
+
+> [!TIP]
+> This code has been moved into a new repository: https://github.com/blixt/go-llms
 
 Probably the least interesting package, it just implements a loop of sending
 messages to an LLM, and if the LLM returns tool calls, call the LLM once more
@@ -249,7 +255,7 @@ with the results of those tool calls.
 ```go
 func main() {
     model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
-    ai := llm.New(
+    ai := llms.New(
         model,
         mypkg.ListFiles,
         mypkg.RunPowerShellCmd,
@@ -264,15 +270,15 @@ func main() {
     // Chat returns a channel of updates.
     for update := range ai.Chat("Give me a random number") {
         switch update := update.(type) {
-        case llm.ErrorUpdate:
+        case llms.ErrorUpdate:
             panic(update.Error)
-        case llm.TextUpdate:
+        case llms.TextUpdate:
             // Received for each chunk of text from the LLM.
             fmt.Print(update.Text)
-        case llm.ToolStartUpdate:
+        case llms.ToolStartUpdate:
             // Received the moment the LLM streams that it intends to use a tool.
             fmt.Printf("(%s: ", update.Tool.Label())
-        case llm.ToolDoneUpdate:
+        case llms.ToolDoneUpdate:
             // Received after the LLM finished sending arguments and the tool ran.
             fmt.Printf("%s)\n", update.Result.Label())
         }

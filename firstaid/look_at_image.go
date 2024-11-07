@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type LookAtImageParams struct {
@@ -13,19 +13,19 @@ type LookAtImageParams struct {
 	HighQuality bool   `json:"high_quality,omitempty" description:"Use true if you want to see the image in higher resolution."`
 }
 
-var LookAtImage = tool.Func(
+var LookAtImage = tools.Func(
 	"Look at image",
 	"Displays an image from the specified path. Use this to view an image file.",
 	"look_at_image",
-	func(r tool.Runner, p LookAtImageParams) tool.Result {
+	func(r tools.Runner, p LookAtImageParams) tools.Result {
 		p.Path = expandPath(p.Path)
 		label := fmt.Sprintf("Look at image `%s`", filepath.Base(p.Path))
 		if _, err := os.Stat(p.Path); os.IsNotExist(err) {
-			return tool.Error(label, fmt.Errorf("file does not exist: %s", p.Path))
+			return tools.Error(label, fmt.Errorf("file does not exist: %s", p.Path))
 		}
-		var rb tool.ResultBuilder
+		var rb tools.ResultBuilder
 		if err := rb.AddImage(p.Path, p.HighQuality); err != nil {
-			return tool.Error(label, err)
+			return tools.Error(label, err)
 		}
 		content := map[string]string{
 			"message": fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(p.Path)),

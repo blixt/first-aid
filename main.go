@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blixt/go-llms/content"
+	"github.com/blixt/go-llms/llms"
+	"github.com/blixt/go-llms/openai"
 	"github.com/joho/godotenv"
 	"github.com/peterh/liner"
 
 	"github.com/blixt/first-aid/chromecontrol"
-	"github.com/blixt/first-aid/content"
 	"github.com/blixt/first-aid/firstaid"
-	"github.com/blixt/first-aid/llm"
-	"github.com/blixt/first-aid/llm/openai"
 	"github.com/blixt/first-aid/writer"
 )
 
@@ -25,10 +25,10 @@ func main() {
 	}
 
 	model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
-	// model := google.New("gemini-1.5-pro-001").
-	// 	WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
+	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
+	// model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-5-sonnet-latest")
 
-	ai := llm.New(
+	ai := llms.New(
 		model,
 		firstaid.ListFiles,
 		firstaid.LookAtImage,
@@ -38,6 +38,7 @@ func main() {
 		firstaid.SpliceFile,
 		firstaid.SpeakOutLoud,
 	)
+	ai.SetDebug(true)
 
 	ai.SystemPrompt = func() content.Content {
 		var scratchpad string
@@ -142,16 +143,16 @@ func main() {
 			hasAddedTool := false
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
-				case llm.ErrorUpdate:
+				case llms.ErrorUpdate:
 					panic(update.Error)
-				case llm.TextUpdate:
+				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
 						hasAddedTool = false
 					}
 					fmt.Fprint(w, update.Text)
 					hasAddedText = true
-				case llm.ToolStartUpdate:
+				case llms.ToolStartUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n")
 					} else if hasAddedText {
@@ -160,9 +161,9 @@ func main() {
 					w.SetTask(update.Tool.Label())
 					hasAddedTool = true
 					hasAddedText = false
-				case llm.ToolStatusUpdate:
+				case llms.ToolStatusUpdate:
 					w.SetTask(update.Status)
-				case llm.ToolDoneUpdate:
+				case llms.ToolDoneUpdate:
 					w.SetTask("")
 					if err := update.Result.Error(); err != nil {
 						fmt.Fprintf(w, "❌ %s: %s", update.Result.Label(), firstaid.FirstLineString(err.Error()))

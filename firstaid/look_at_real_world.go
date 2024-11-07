@@ -19,7 +19,7 @@ import (
 	sdkptz "github.com/use-go/onvif/sdk/ptz"
 	xsdonvif "github.com/use-go/onvif/xsd/onvif"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 type LookAtRealWorldParams struct {
@@ -32,38 +32,38 @@ func init() {
 	sdk.Logger = sdk.Logger.Level(zerolog.Disabled)
 }
 
-var LookAtRealWorld = tool.Func(
+var LookAtRealWorld = tools.Func(
 	"Look at real world",
 	"Takes a photo of the real world with the camera. Optionally pans/tilts first (camera has a 360 view). If you're looking for something, search by tilting/panning, taking a low-resolution image, and look at the result. If you don't see what you want, do another search pass, otherwise you can choose to get the high-resolution image if you want to see more.",
 	"look_at_real_world",
-	func(r tool.Runner, p LookAtRealWorldParams) tool.Result {
+	func(r tools.Runner, p LookAtRealWorldParams) tools.Result {
 		device, err := onvif.NewDevice(onvif.DeviceParams{
 			Xaddr:    os.Getenv("CAMERA_ONVIF"),
 			Username: os.Getenv("CAMERA_USERNAME"),
 			Password: os.Getenv("CAMERA_PASSWORD"),
 		})
 		if err != nil {
-			return tool.Error("Look at real world", fmt.Errorf("failed to connect to camera: %v", err))
+			return tools.Error("Look at real world", fmt.Errorf("failed to connect to camera: %v", err))
 		}
 
 		profile, err := getDefaultProfile(device)
 		if err != nil {
-			return tool.Error("Look at real world", fmt.Errorf("failed to get metadata about camera: %w", err))
+			return tools.Error("Look at real world", fmt.Errorf("failed to get metadata about camera: %w", err))
 		}
 
 		if p.RelativePan != 0 || p.RelativeTilt != 0 {
 			err := relativeMove(device, profile.Token, p.RelativePan, p.RelativeTilt, 0)
 			if err != nil {
-				return tool.Error("Look at real world", fmt.Errorf("failed to pan/tilt camera: %v", err))
+				return tools.Error("Look at real world", fmt.Errorf("failed to pan/tilt camera: %v", err))
 			}
 		}
 
 		photoPath, err := takePhoto()
 		if err != nil {
-			return tool.Error("Look at real world", fmt.Errorf("failed to get photo path: %v", err))
+			return tools.Error("Look at real world", fmt.Errorf("failed to get photo path: %v", err))
 		}
 		defer os.Remove(photoPath)
-		var rb tool.ResultBuilder
+		var rb tools.ResultBuilder
 		rb.AddImage(photoPath, p.HighQuality)
 		return rb.Success("Look at real world", fmt.Sprintf("You will receive the photo (%s) from the user as an automated message.", filepath.Base(photoPath)))
 	},

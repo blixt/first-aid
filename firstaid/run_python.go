@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/blixt/first-aid/tool"
+	"github.com/blixt/go-llms/tools"
 )
 
 // Generally when an LLM writes Python, it writes it as if it's operating within
@@ -41,30 +41,30 @@ type RunPythonParams struct {
 	Statements []string `json:"statements" description:"The Python statements to run (invisible to the user). You must always print results you want to see."`
 }
 
-var RunPython = tool.Func(
+var RunPython = tools.Func(
 	"Run Python",
 	"Run Python on the user's computer and return the output",
 	"run_python",
-	func(r tool.Runner, p RunPythonParams) tool.Result {
+	func(r tools.Runner, p RunPythonParams) tools.Result {
 		if len(p.Statements) == 0 {
-			return tool.Error("Run Python failed", errors.New("missing Python statements"))
+			return tools.Error("Run Python failed", errors.New("missing Python statements"))
 		}
 		// Run the shell command and capture the output or error.
 		pythonExecutable := findPythonExecutable()
 		if pythonExecutable == "" {
-			return tool.Error("Run Python failed", errors.New("could not find Python executable"))
+			return tools.Error("Run Python failed", errors.New("could not find Python executable"))
 		}
 		cmd := exec.Command(pythonExecutable)
 		statementsJSON, err := json.Marshal(p.Statements)
 		if err != nil {
-			return tool.Error("Run Python failed", err)
+			return tools.Error("Run Python failed", err)
 		}
 		cmd.Stdin = strings.NewReader(fmt.Sprintf(interpreterWrapper, statementsJSON))
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
 		if err != nil {
-			return tool.Error(FirstLine(p.Statements), fmt.Errorf("%w: %s", err, output))
+			return tools.Error(FirstLine(p.Statements), fmt.Errorf("%w: %s", err, output))
 		}
-		return tool.Success(FirstLine(p.Statements), map[string]any{
+		return tools.Success(FirstLine(p.Statements), map[string]any{
 			"output": string(output),
 		})
 	})

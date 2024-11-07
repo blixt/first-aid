@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/blixt/go-llms/tools"
 
 	"github.com/blixt/first-aid/firstaid"
-	"github.com/blixt/first-aid/tool"
 )
 
 func TestListFiles(t *testing.T) {
@@ -23,7 +23,7 @@ func TestListFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "subsubdir", "file3.txt"), []byte("line1\nline2\nline3\nline4\n"), 0644))
 
-	result := firstaid.ListFiles.Run(tool.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
+	result := firstaid.ListFiles.Run(tools.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
 
 	require.NoError(t, result.Error())
 
