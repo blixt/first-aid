@@ -1,15 +1,18 @@
 package firstaid
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/blixt/go-llms/tools"
 )
 
 type RunShellCmdParams struct {
-	Command string `json:"command"`
+	Command         string `json:"command"`
+	DeadlineSeconds int    `json:"deadlineSeconds,omitempty" description:"The maximum number of seconds to wait for the command to finish. If the command doesn't finish within this time, it will be killed and the output will be returned as an error."`
 }
 
 var RunShellCmd = tools.Func(
@@ -19,7 +22,12 @@ var RunShellCmd = tools.Func(
 	func(r tools.Runner, p RunShellCmdParams) tools.Result {
 		r.Report(fmt.Sprintf("Running shell command %s", FirstLineString(p.Command)))
 		// Run the shell command and capture the output or error.
-		cmd := exec.Command("sh", "-c", p.Command)
+		if p.DeadlineSeconds <= 0 {
+			p.DeadlineSeconds = 30
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), time.Duration(p.DeadlineSeconds)*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "sh", "-c", p.Command)
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
 		if err != nil {
 			return tools.Error(p.Command, fmt.Errorf("%w: %s", err, output))
