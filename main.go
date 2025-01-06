@@ -21,9 +21,8 @@ import (
 )
 
 func main() {
-	if err := godotenv.Overload(); err != nil {
-		panic(err)
-	}
+	// Load .env if it exists. TODO: This should probably change to .Load().
+	godotenv.Overload()
 
 	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
 	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
