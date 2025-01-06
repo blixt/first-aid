@@ -55,6 +55,7 @@ func (s *Server) AddToolsToLLM(model *llms.LLM) {
 	model.AddTool(t)
 
 	t = tools.Func("Open new tab", "Open a new tab in the browser", "browser_open_tab", func(r tools.Runner, params OpenTabParams) tools.Result {
+		r.Report(fmt.Sprintf("Opening new tab (%s)", params.URL))
 		tabID, err := s.OpenTab(params.URL, params.Background)
 		if err != nil {
 			return tools.Error("Open new tab", err)

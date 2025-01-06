@@ -17,6 +17,7 @@ var RunShellCmd = tools.Func(
 	"Run a shell command on the user's computer and return the output",
 	"run_shell_cmd",
 	func(r tools.Runner, p RunShellCmdParams) tools.Result {
+		r.Report(fmt.Sprintf("Running shell command %s", FirstLineString(p.Command)))
 		// Run the shell command and capture the output or error.
 		cmd := exec.Command("sh", "-c", p.Command)
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR

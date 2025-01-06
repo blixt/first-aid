@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ var SpliceFile = tools.Func(
 	"Delete and/or replace a slice of the lines in the specified file, if we imagine the file as a zero-indexed array of lines.",
 	"splice_file",
 	func(r tools.Runner, p SpliceFileParams) tools.Result {
+		r.Report(fmt.Sprintf("Updating file (%s)", path.Base(p.Path)))
 		p.Path = expandPath(p.Path)
 		// Open or create the file if it doesn't exist.
 		file, err := os.OpenFile(p.Path, os.O_RDWR|os.O_CREATE, 0644)
