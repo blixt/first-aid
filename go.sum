@@ -1,8 +1,6 @@
 github.com/beevik/etree v1.1.0/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
 github.com/beevik/etree v1.4.1 h1:PmQJDDYahBGNKDcpdX8uPy1xRCwoCGVUiW669MEirVI=
 github.com/beevik/etree v1.4.1/go.mod h1:gPNJNaBGVZ9AwsidazFZyygnd+0pAU38N4D+WemwKNs=
-github.com/blixt/go-llms v0.0.0-20250106195902-a6528fc11980 h1:BQ68r9PMKIXMVT03FM6MEcR9ZEIGZUgOGw5MqZxbHwM=
-github.com/blixt/go-llms v0.0.0-20250106195902-a6528fc11980/go.mod h1:8/DuMG9QYlOQoShM45/BdSuTywnLmac+g70nWEzoZJA=
 github.com/blixt/go-llms v0.0.0-20250106232327-7611d1b42df6 h1:b2N1cj24Pt6ARQojsZy+YRJmBTfZyz2pZHAPuqmIMTg=
 github.com/blixt/go-llms v0.0.0-20250106232327-7611d1b42df6/go.mod h1:8/DuMG9QYlOQoShM45/BdSuTywnLmac+g70nWEzoZJA=
 github.com/coreos/go-systemd/v22 v22.3.2/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
