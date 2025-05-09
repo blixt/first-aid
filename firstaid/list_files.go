@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type ListFilesParams struct {
@@ -84,7 +84,7 @@ var ListFiles = tools.Func(
 		})
 		label := fmt.Sprintf("List files in `%s`", p.Path)
 		if err != nil {
-			return tools.Error(label, err)
+			return tools.ErrorWithLabel(label, err)
 		}
 		result := map[string]any{
 			"items":        items,
@@ -93,6 +93,6 @@ var ListFiles = tools.Func(
 		if entries > 1_000 {
 			result["note"] = fmt.Sprintf("There were %d entries, but we could only include 1000.", entries)
 		}
-		return tools.Success(label, result)
+		return tools.SuccessWithLabel(label, result)
 	},
 )

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type SpliceFileParams struct {
@@ -30,7 +30,7 @@ var SpliceFile = tools.Func(
 		// Open or create the file if it doesn't exist.
 		file, err := os.OpenFile(p.Path, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			return tools.Error(p.Path, fmt.Errorf("failed to open %q: %w", p.Path, err))
+			return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to open %q: %w", p.Path, err))
 		}
 		defer file.Close()
 
@@ -52,12 +52,12 @@ var SpliceFile = tools.Func(
 					result.WriteString(scanner.Text() + "\n")
 				}
 			} else if err := scanner.Err(); err != nil {
-				return tools.Error(p.Path, fmt.Errorf("failed to read file: %w", err))
+				return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to read file: %w", err))
 			} else if i < p.Start {
 				// If we get here it means we reached the end of the file but
 				// the intended insert location is further ahead. We consider
 				// this an erroneous usage of the API.
-				return tools.Error(p.Path, fmt.Errorf("file has less than %d lines", p.Start+1))
+				return tools.ErrorWithLabel(p.Path, fmt.Errorf("file has less than %d lines", p.Start+1))
 			} else {
 				// We finished all our work.
 				break
@@ -69,12 +69,12 @@ var SpliceFile = tools.Func(
 		if i > 0 {
 			backupPath := fmt.Sprintf("%s.%d.bak", p.Path, time.Now().Unix())
 			if err := copyFile(p.Path, backupPath); err != nil {
-				return tools.Error(p.Path, fmt.Errorf("failed to create backup: %w", err))
+				return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to create backup: %w", err))
 			}
 		}
 
 		if err := writeFileAtomically(p.Path, strings.NewReader(result.String())); err != nil {
-			return tools.Error(p.Path, fmt.Errorf("failed to write updated content: %w", err))
+			return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to write updated content: %w", err))
 		}
 
 		var description string
@@ -95,7 +95,7 @@ var SpliceFile = tools.Func(
 			action = "added"
 		}
 
-		return tools.Success(description, map[string]interface{}{
+		return tools.SuccessWithLabel(description, map[string]interface{}{
 			"path":        p.Path,
 			"action":      action,
 			"deleteCount": p.DeleteCount,

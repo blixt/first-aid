@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 func TestSliceFile(t *testing.T) {
@@ -127,7 +127,8 @@ Line 5`,
 			expectedJSON, err := json.Marshal(expected)
 			require.NoError(t, err, "Failed to marshal expected result")
 
-			assert.JSONEq(t, string(expectedJSON), string(result.JSON()), "Result mismatch")
+			resultJSON := extractJSONFromResult(t, result)
+			assert.JSONEq(t, string(expectedJSON), string(resultJSON), "Result mismatch")
 		})
 	}
 }

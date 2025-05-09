@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 // Generally when an LLM writes Python, it writes it as if it's operating within
@@ -47,24 +47,24 @@ var RunPython = tools.Func(
 	"run_python",
 	func(r tools.Runner, p RunPythonParams) tools.Result {
 		if len(p.Statements) == 0 {
-			return tools.Error("Run Python failed", errors.New("missing Python statements"))
+			return tools.ErrorWithLabel("Run Python failed", errors.New("missing Python statements"))
 		}
 		// Run the shell command and capture the output or error.
 		pythonExecutable := findPythonExecutable()
 		if pythonExecutable == "" {
-			return tools.Error("Run Python failed", errors.New("could not find Python executable"))
+			return tools.ErrorWithLabel("Run Python failed", errors.New("could not find Python executable"))
 		}
 		cmd := exec.Command(pythonExecutable)
 		statementsJSON, err := json.Marshal(p.Statements)
 		if err != nil {
-			return tools.Error("Run Python failed", err)
+			return tools.ErrorWithLabel("Run Python failed", err)
 		}
 		cmd.Stdin = strings.NewReader(fmt.Sprintf(interpreterWrapper, statementsJSON))
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
 		if err != nil {
-			return tools.Error(FirstLine(p.Statements), fmt.Errorf("%w: %s", err, output))
+			return tools.ErrorWithLabel(FirstLine(p.Statements), fmt.Errorf("%w: %s", err, output))
 		}
-		return tools.Success(FirstLine(p.Statements), map[string]any{
+		return tools.SuccessWithLabel(FirstLine(p.Statements), map[string]any{
 			"output": string(output),
 		})
 	})

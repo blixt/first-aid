@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -19,7 +18,8 @@ import (
 	sdkptz "github.com/use-go/onvif/sdk/ptz"
 	xsdonvif "github.com/use-go/onvif/xsd/onvif"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/content"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type LookAtRealWorldParams struct {
@@ -43,29 +43,32 @@ var LookAtRealWorld = tools.Func(
 			Password: os.Getenv("CAMERA_PASSWORD"),
 		})
 		if err != nil {
-			return tools.Error("Look at real world", fmt.Errorf("failed to connect to camera: %v", err))
+			return tools.ErrorWithLabel("Look at real world", fmt.Errorf("failed to connect to camera: %v", err))
 		}
 
 		profile, err := getDefaultProfile(device)
 		if err != nil {
-			return tools.Error("Look at real world", fmt.Errorf("failed to get metadata about camera: %w", err))
+			return tools.ErrorWithLabel("Look at real world", fmt.Errorf("failed to get metadata about camera: %w", err))
 		}
 
 		if p.RelativePan != 0 || p.RelativeTilt != 0 {
 			err := relativeMove(device, profile.Token, p.RelativePan, p.RelativeTilt, 0)
 			if err != nil {
-				return tools.Error("Look at real world", fmt.Errorf("failed to pan/tilt camera: %v", err))
+				return tools.ErrorWithLabel("Look at real world", fmt.Errorf("failed to pan/tilt camera: %v", err))
 			}
 		}
 
 		photoPath, err := takePhoto()
 		if err != nil {
-			return tools.Error("Look at real world", fmt.Errorf("failed to get photo path: %v", err))
+			return tools.ErrorWithLabel("Look at real world", fmt.Errorf("failed to get photo path: %v", err))
 		}
 		defer os.Remove(photoPath)
-		var rb tools.ResultBuilder
-		rb.AddImage(photoPath, p.HighQuality)
-		return rb.Success("Look at real world", fmt.Sprintf("You will receive the photo (%s) from the user as an automated message.", filepath.Base(photoPath)))
+		imageName, dataURI, err := content.ImageToDataURI(photoPath, p.HighQuality)
+		if err != nil {
+			return tools.ErrorWithLabel("Look at real world", fmt.Errorf("failed to process image %s: %w", imageName, err))
+		}
+		resultContent := content.Content{&content.ImageURL{URL: dataURI}}
+		return tools.SuccessWithContent("Look at real world", resultContent)
 	},
 )
 

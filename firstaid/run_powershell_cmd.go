@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type RunPowerShellCmdParams struct {
@@ -20,9 +20,9 @@ var RunPowerShellCmd = tools.Func(
 		cmd := exec.Command("powershell", "-Command", p.Command)
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
 		if err != nil {
-			return tools.Error(p.Command, fmt.Errorf("%w: %s", err, output))
+			return tools.ErrorWithLabel(p.Command, fmt.Errorf("%w: %s", err, output))
 		}
-		return tools.Success(p.Command, map[string]any{
+		return tools.SuccessWithLabel(p.Command, map[string]any{
 			"output": string(output),
 		})
 	})

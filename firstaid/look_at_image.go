@@ -5,7 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/content"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type LookAtImageParams struct {
@@ -21,15 +22,13 @@ var LookAtImage = tools.Func(
 		p.Path = expandPath(p.Path)
 		label := fmt.Sprintf("Look at image `%s`", filepath.Base(p.Path))
 		if _, err := os.Stat(p.Path); os.IsNotExist(err) {
-			return tools.Error(label, fmt.Errorf("file does not exist: %s", p.Path))
+			return tools.ErrorWithLabel(label, fmt.Errorf("file does not exist: %s", p.Path))
 		}
-		var rb tools.ResultBuilder
-		if err := rb.AddImage(p.Path, p.HighQuality); err != nil {
-			return tools.Error(label, err)
+		imageName, dataURI, err := content.ImageToDataURI(p.Path, p.HighQuality)
+		if err != nil {
+			return tools.ErrorWithLabel(label, fmt.Errorf("failed to process image %s: %w", imageName, err))
 		}
-		content := map[string]string{
-			"message": fmt.Sprintf("You will receive %s from the user as an automated message.", filepath.Base(p.Path)),
-		}
-		return rb.Success(label, content)
+		resultContent := content.Content{&content.ImageURL{URL: dataURI}}
+		return tools.SuccessWithContent(label, resultContent)
 	},
 )

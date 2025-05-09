@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type SliceFileParams struct {
@@ -23,7 +23,7 @@ var SliceFile = tools.Func(
 
 		file, err := os.Open(p.Path)
 		if err != nil {
-			return tools.Error(p.Path, fmt.Errorf("failed to open file: %v", err))
+			return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to open file: %v", err))
 		}
 		defer file.Close()
 
@@ -33,7 +33,7 @@ var SliceFile = tools.Func(
 			lines = append(lines, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
-			return tools.Error(p.Path, err)
+			return tools.ErrorWithLabel(p.Path, err)
 		}
 
 		// Support a negative start index.
@@ -71,11 +71,11 @@ var SliceFile = tools.Func(
 
 		var description string
 		if end-start < 1 {
-			return tools.Error(p.Path, fmt.Errorf("failed to read line %d from %q", start+1, p.Path))
+			return tools.ErrorWithLabel(p.Path, fmt.Errorf("failed to read line %d from %q", start+1, p.Path))
 		} else if start == end-1 {
 			description = fmt.Sprintf("Read line %d from %q", start+1, p.Path)
 		} else {
 			description = fmt.Sprintf("Read lines %d-%d from %q", start+1, end, p.Path)
 		}
-		return tools.Success(description, result)
+		return tools.SuccessWithLabel(description, result)
 	})

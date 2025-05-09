@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type RunAppleScriptParams struct {
@@ -18,7 +18,7 @@ var RunAppleScript = tools.Func(
 	"run_apple_script",
 	func(r tools.Runner, p RunAppleScriptParams) tools.Result {
 		if len(p.ScriptLines) == 0 {
-			return tools.Error("Run AppleScript failed", errors.New("missing script lines"))
+			return tools.ErrorWithLabel("Run AppleScript failed", errors.New("missing script lines"))
 		}
 		// Run the shell command and capture the output or error.
 		var args []string
@@ -28,9 +28,9 @@ var RunAppleScript = tools.Func(
 		cmd := exec.Command("osascript", args...)
 		output, err := cmd.CombinedOutput() // Combines both STDOUT and STDERR
 		if err != nil {
-			return tools.Error(FirstLine(p.ScriptLines), fmt.Errorf("%w: %s", err, output))
+			return tools.ErrorWithLabel(FirstLine(p.ScriptLines), fmt.Errorf("%w: %s", err, output))
 		}
-		return tools.Success(FirstLine(p.ScriptLines), map[string]any{
+		return tools.SuccessWithLabel(FirstLine(p.ScriptLines), map[string]any{
 			"output": string(output),
 		})
 	})

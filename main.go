@@ -9,9 +9,9 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/blixt/go-llms/anthropic"
-	"github.com/blixt/go-llms/content"
-	"github.com/blixt/go-llms/llms"
+	"github.com/flitsinc/go-llms/anthropic"
+	"github.com/flitsinc/go-llms/content"
+	"github.com/flitsinc/go-llms/llms"
 	"github.com/joho/godotenv"
 	"github.com/peterh/liner"
 
@@ -26,7 +26,7 @@ func main() {
 
 	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
 	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
-	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-5-sonnet-latest")
+	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-7-sonnet-latest")
 
 	ai := llms.New(
 		model,
@@ -38,7 +38,7 @@ func main() {
 		firstaid.SpliceFile,
 		firstaid.SpeakOutLoud,
 	)
-	ai.SetDebug(true)
+	ai.WithDebug()
 
 	ai.SystemPrompt = func() content.Content {
 		var scratchpad string
@@ -151,8 +151,6 @@ func main() {
 			hasAddedTool := false
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
-				case llms.ErrorUpdate:
-					panic(update.Error)
 				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
@@ -190,6 +188,9 @@ func main() {
 					panic(fmt.Sprintf("unhandled update type: %q", update.Type()))
 				}
 			}
+			if err := ai.Err(); err != nil {
+				panic(err)
+			}
 		}()
 
 		fmt.Println()
@@ -200,7 +201,7 @@ func main() {
 		input = getInput()
 	}
 
-	writer.Write(fmt.Sprintf("%s thanks you for the $%.2f. Bye!", model.Company(), ai.TotalCost()))
+	writer.Write(fmt.Sprintf("%s thanks you for your money. Bye!", model.Company()))
 }
 
 func getOS() string {

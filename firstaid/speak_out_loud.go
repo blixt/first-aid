@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/blixt/first-aid/tts"
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type SpeakOutLoudParams struct {
@@ -21,5 +21,5 @@ var SpeakOutLoud = tools.Func(
 	func(r tools.Runner, p SpeakOutLoudParams) tools.Result {
 		tts.Speak(p.Message)
 		numWords := len(reWords.FindAllString(p.Message, -1))
-		return tools.Success(fmt.Sprintf("Spoke %d words", numWords), map[string]any{"success": true})
+		return tools.SuccessWithLabel(fmt.Sprintf("Spoke %d words", numWords), map[string]any{"success": true})
 	})

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blixt/go-llms/llms"
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/content"
+	"github.com/flitsinc/go-llms/llms"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type ListTabsParams struct {
@@ -35,22 +36,22 @@ func (s *Server) AddToolsToLLM(model *llms.LLM) {
 	t = tools.Func("List browser tabs", "List info about the tabs in the browser, including their ids", "browser_list_tabs", func(r tools.Runner, params ListTabsParams) tools.Result {
 		tabs, err := s.GetTabs()
 		if err != nil {
-			return tools.Error("List browser tabs", err)
+			return tools.ErrorWithLabel("List browser tabs", err)
 		}
 		jsonData, err := json.Marshal(tabs)
 		if err != nil {
-			return tools.Error("List browser tabs", err)
+			return tools.ErrorWithLabel("List browser tabs", err)
 		}
-		return tools.Success("List browser tabs", string(jsonData))
+		return tools.SuccessWithLabel("List browser tabs", string(jsonData))
 	})
 	model.AddTool(t)
 
 	t = tools.Func("Set active browser tab", "Switch to the browser tab with the specified id", "browser_set_active_tab", func(r tools.Runner, params SetActiveTabParams) tools.Result {
 		err := s.SetActiveTab(params.ID)
 		if err != nil {
-			return tools.Error("Set active tab", err)
+			return tools.ErrorWithLabel("Set active tab", err)
 		}
-		return tools.Success("Set active tab", "Tab set successfully")
+		return tools.SuccessWithLabel("Set active tab", "Tab set successfully")
 	})
 	model.AddTool(t)
 
@@ -58,7 +59,7 @@ func (s *Server) AddToolsToLLM(model *llms.LLM) {
 		r.Report(fmt.Sprintf("Opening new tab (%s)", params.URL))
 		tabID, err := s.OpenTab(params.URL, params.Background)
 		if err != nil {
-			return tools.Error("Open new tab", err)
+			return tools.ErrorWithLabel("Open new tab", err)
 		}
 		var content string
 		if params.Background {
@@ -66,25 +67,24 @@ func (s *Server) AddToolsToLLM(model *llms.LLM) {
 		} else {
 			content = fmt.Sprintf("Opened a new tab. To screenshot it, use id %d.", tabID)
 		}
-		return tools.Success("Open new tab", content)
+		return tools.SuccessWithLabel("Open new tab", content)
 	})
 	model.AddTool(t)
 
 	t = tools.Func("Look at browser tab", "Activate and take a screenshot of the specified tab in the browser", "browser_screenshot_tab", func(r tools.Runner, params ScreenshotTabParams) tools.Result {
 		dataURI, err := s.ScreenshotTab(params.ID)
 		if err != nil {
-			return tools.Error("Screenshot tab", err)
+			return tools.ErrorWithLabel("Screenshot tab", err)
 		}
-		var rb tools.ResultBuilder
-		rb.AddImageURL("screenshot.png", dataURI)
-		return rb.Success("Screenshot browser tab", "You will receive screenshot.png from the user as an automated message.")
+		content := content.Content{&content.ImageURL{URL: dataURI}}
+		return tools.SuccessWithContent("Screenshot browser tab", content)
 	})
 	model.AddTool(t)
 
 	t = tools.Func("Search the web", "Search the web using the default search provider", "browser_search_web", func(r tools.Runner, params SearchWebParams) tools.Result {
 		tabID, err := s.SearchWeb(params.Query, params.Background)
 		if err != nil {
-			return tools.Error("Search the web", err)
+			return tools.ErrorWithLabel("Search the web", err)
 		}
 		var content string
 		if params.Background {
@@ -92,7 +92,7 @@ func (s *Server) AddToolsToLLM(model *llms.LLM) {
 		} else {
 			content = fmt.Sprintf("The search results are now in a new active tab. To screenshot it, use id %d.", tabID)
 		}
-		return tools.Success("Search the web", content)
+		return tools.SuccessWithLabel("Search the web", content)
 	})
 	model.AddTool(t)
 }

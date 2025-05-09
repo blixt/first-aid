@@ -99,7 +99,7 @@ import (
     "fmt"
     "os/exec"
 
-    "github.com/blixt/go-llms/tools"
+    "github.com/flitsinc/go-llms/tools"
 )
 
 type RunPowerShellCmdParams struct {

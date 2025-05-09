@@ -1,4 +1,4 @@
-package firstaid_test
+package firstaid
 
 import (
 	"encoding/json"
@@ -7,11 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/flitsinc/go-llms/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/blixt/go-llms/tools"
-
-	"github.com/blixt/first-aid/firstaid"
 )
 
 func TestListFiles(t *testing.T) {
@@ -23,11 +21,11 @@ func TestListFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "file2.txt"), []byte("line1\nline2\nline3\n"), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subdir", "subsubdir", "file3.txt"), []byte("line1\nline2\nline3\nline4\n"), 0644))
 
-	result := firstaid.ListFiles.Run(tools.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
+	result := ListFiles.Run(tools.NopRunner, json.RawMessage(fmt.Sprintf(`{"path":%q,"depth":2}`, tempDir)))
 
 	require.NoError(t, result.Error())
 
-	expectedItems := map[string]firstaid.FileInfo{
+	expectedItems := map[string]FileInfo{
 		"file1.txt": {
 			Type:  "file",
 			Lines: 2,
@@ -53,7 +51,8 @@ func TestListFiles(t *testing.T) {
 	}
 
 	var actual map[string]any
-	err := json.Unmarshal(result.JSON(), &actual)
+	resultJSON := extractJSONFromResult(t, result)
+	err := json.Unmarshal(resultJSON, &actual)
 	require.NoError(t, err)
 
 	expectedJSON, err := json.Marshal(expectedResult)

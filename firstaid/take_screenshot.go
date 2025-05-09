@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/blixt/go-llms/tools"
+	"github.com/flitsinc/go-llms/content"
+	"github.com/flitsinc/go-llms/tools"
 )
 
 type TakeScreenshotParams struct {
@@ -30,23 +30,20 @@ var TakeScreenshot = tools.Func(
 			// Command for macOS to take a screenshot.
 			cmd = exec.Command("screencapture", "-x", screenshotPath)
 		} else {
-			return tools.Error("Take screenshot", fmt.Errorf("unsupported platform %s", runtime.GOOS))
+			return tools.ErrorWithLabel("Take screenshot", fmt.Errorf("unsupported platform %s", runtime.GOOS))
 		}
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return tools.Error("Take screenshot", fmt.Errorf("%w: %s", err, output))
+			return tools.ErrorWithLabel("Take screenshot", fmt.Errorf("%w: %s", err, output))
 		}
 		defer os.Remove(screenshotPath)
 
-		var rb tools.ResultBuilder
-		if err := rb.AddImage(screenshotPath, true); err != nil {
-			return tools.Error("Take screenshot", fmt.Errorf("failed to add image: %w", err))
+		imageName, dataURI, err := content.ImageToDataURI(screenshotPath, true)
+		if err != nil {
+			return tools.ErrorWithLabel("Take screenshot", fmt.Errorf("failed to process screenshot %s: %w", imageName, err))
 		}
 
-		fileName := filepath.Base(screenshotPath)
-		return rb.Success("Take screenshot", map[string]any{
-			"message":  fmt.Sprintf("You will receive %s from the user as an automated message.", fileName),
-			"fileName": fileName,
-		})
+		resultContent := content.Content{&content.ImageURL{URL: dataURI}}
+		return tools.SuccessWithContent("Take screenshot", resultContent)
 	},
 )
