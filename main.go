@@ -164,8 +164,11 @@ func main() {
 				switch update := update.(type) {
 				case llms.ThinkingUpdate:
 					activeThought += update.Thought
-					if len(activeThought) > 50 {
-						activeThought = "…" + strings.TrimLeft(activeThought[len(activeThought)-50:], " ")
+					if lastNewline := strings.LastIndex(activeThought, "\n"); lastNewline != -1 {
+						activeThought = activeThought[lastNewline+1:]
+					}
+					if len(activeThought) > 80 {
+						activeThought = "…" + strings.TrimLeft(activeThought[len(activeThought)-79:], " ")
 					}
 					w.SetTask(activeThought)
 				case llms.TextUpdate:
