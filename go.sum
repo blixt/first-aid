@@ -26,6 +26,10 @@ github.com/flitsinc/go-llms v0.0.0-20250515142201-2655f6bcc021 h1:0Gt2EPlMDENhQO
 github.com/flitsinc/go-llms v0.0.0-20250515142201-2655f6bcc021/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/flitsinc/go-llms v0.0.0-20250515142545-7cc6c8c10eac h1:bXZ4A61V4Z37LARFuHsVmrS1CYnK5HrvNmu9fM6c4GY=
 github.com/flitsinc/go-llms v0.0.0-20250515142545-7cc6c8c10eac/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250515145733-9e272863896b h1:eXZ+baHb2s59ufRpTXxBd9lWTPllJ11UdDizs3zxhwM=
+github.com/flitsinc/go-llms v0.0.0-20250515145733-9e272863896b/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250515154616-d697fe16a8cc h1:FccsztvOtroRIGXMElzxUBkQGV0HdPBshR2QAuczi/c=
+github.com/flitsinc/go-llms v0.0.0-20250515154616-d697fe16a8cc/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-gonic/gin v1.7.0/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=

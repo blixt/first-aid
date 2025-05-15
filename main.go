@@ -159,14 +159,15 @@ func main() {
 			defer w.Done()
 			hasAddedText := false
 			hasAddedTool := false
+			activeThought := ""
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
 				case llms.ThinkingUpdate:
-					text := update.Text
-					if len(text) > 50 {
-						text = "…" + strings.TrimSpace(text[len(text)-50:])
+					activeThought += update.Thought
+					if len(activeThought) > 50 {
+						activeThought = "…" + strings.TrimLeft(activeThought[len(activeThought)-50:], " ")
 					}
-					w.SetTask(text)
+					w.SetTask(activeThought)
 				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
