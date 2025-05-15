@@ -26,7 +26,7 @@ func main() {
 
 	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
 	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
-	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-7-sonnet-latest")
+	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-7-sonnet-latest").WithThinking(1024)
 
 	ai := llms.New(
 		model,
@@ -151,6 +151,12 @@ func main() {
 			hasAddedTool := false
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
+				case llms.ThinkingUpdate:
+					text := update.Text
+					if len(text) > 50 {
+						text = "…" + strings.TrimSpace(text[len(text)-50:])
+					}
+					w.SetTask(text)
 				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
@@ -175,6 +181,8 @@ func main() {
 					w.SetTask(update.Tool.Label())
 					hasAddedTool = true
 					hasAddedText = false
+				case llms.ToolDeltaUpdate:
+					// We don't do anything with this yet.
 				case llms.ToolStatusUpdate:
 					w.SetTask(update.Status)
 				case llms.ToolDoneUpdate:

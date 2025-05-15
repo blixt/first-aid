@@ -11,6 +11,8 @@ github.com/ebitengine/oto/v3 v3.3.3 h1:m6RV69OqoXYSWCDsHXN9rc07aDuDstGHtait7HXSM
 github.com/ebitengine/oto/v3 v3.3.3/go.mod h1:MZeb/lwoC4DCOdiTIxYezrURTw7EvK/yF863+tmBI+U=
 github.com/ebitengine/purego v0.8.2 h1:jPPGWs2sZ1UgOSgD2bClL0MJIqu58nOmIcBuXr62z1I=
 github.com/ebitengine/purego v0.8.2/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
+github.com/ebitengine/purego v0.8.3 h1:K+0AjQp63JEZTEMZiwsI9g0+hAMNohwUOtY0RPGexmc=
+github.com/ebitengine/purego v0.8.3/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/elgs/gostrgen v0.0.0-20161222160715-9d61ae07eeae/go.mod h1:wruC5r2gHdr/JIUs5Rr1V45YtsAzKXZxAnn/5rPC97g=
 github.com/elgs/gostrgen v0.0.0-20220325073726-0c3e00d082f6 h1:x9TA+vnGEyqmWY+eA9HfgxNRkOQqwiEpFE9IPXSGuEA=
 github.com/elgs/gostrgen v0.0.0-20220325073726-0c3e00d082f6/go.mod h1:wruC5r2gHdr/JIUs5Rr1V45YtsAzKXZxAnn/5rPC97g=
@@ -18,6 +20,12 @@ github.com/flitsinc/go-llms v0.0.0-20250507205358-8f2f689ec332 h1:s32QTrCW0oXUnY
 github.com/flitsinc/go-llms v0.0.0-20250507205358-8f2f689ec332/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/flitsinc/go-llms v0.0.0-20250509094537-3f0b089f7ef3 h1:4oT3etqm28lu58PEwJhIQW+l7UHAQUpS+KYf3R9gDwA=
 github.com/flitsinc/go-llms v0.0.0-20250509094537-3f0b089f7ef3/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250514124655-66b5bdc62207 h1:L7ckT/zZWV41jmxuNpxAKD2OAJEYAjEv/2OIPkN+GbE=
+github.com/flitsinc/go-llms v0.0.0-20250514124655-66b5bdc62207/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250515142201-2655f6bcc021 h1:0Gt2EPlMDENhQOkfWY8sPvGqo2NASmSiIFRJeKxK5WE=
+github.com/flitsinc/go-llms v0.0.0-20250515142201-2655f6bcc021/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250515142545-7cc6c8c10eac h1:bXZ4A61V4Z37LARFuHsVmrS1CYnK5HrvNmu9fM6c4GY=
+github.com/flitsinc/go-llms v0.0.0-20250515142545-7cc6c8c10eac/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-gonic/gin v1.7.0/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=

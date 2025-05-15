@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/ebitengine/oto/v3 v3.3.3
-	github.com/flitsinc/go-llms v0.0.0-20250509094537-3f0b089f7ef3
+	github.com/flitsinc/go-llms v0.0.0-20250515142545-7cc6c8c10eac
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/peterh/liner v1.2.2
@@ -17,7 +17,7 @@ require (
 require (
 	github.com/beevik/etree v1.5.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/elgs/gostrgen v0.0.0-20220325073726-0c3e00d082f6 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/juju/errors v1.0.0 // indirect
