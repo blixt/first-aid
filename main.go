@@ -20,6 +20,11 @@ import (
 	"github.com/blixt/first-aid/writer"
 )
 
+const (
+	EnableOnvifCamera   = false
+	EnableChromeControl = false
+)
+
 func main() {
 	// Load .env if it exists. TODO: This should probably change to .Load().
 	godotenv.Overload()
@@ -32,7 +37,6 @@ func main() {
 		model,
 		firstaid.ListFiles,
 		firstaid.LookAtImage,
-		firstaid.LookAtRealWorld,
 		firstaid.RunPython,
 		firstaid.SliceFile,
 		firstaid.SpliceFile,
@@ -109,14 +113,20 @@ func main() {
 		ai.AddTool(firstaid.RunPowerShellCmd)
 	}
 
-	// Set up a server for the accompanying Google Chrome Extension to connect
-	// to, enabling control of the browser by the LLM.
-	chromeServer := chromecontrol.NewServer()
-	if err := chromeServer.Start(); err != nil {
-		panic(fmt.Sprintf("Failed to start WebSocket server: %v", err))
+	if EnableOnvifCamera {
+		ai.AddTool(firstaid.LookAtRealWorld)
 	}
-	defer chromeServer.Close()
-	chromeServer.AddToolsToLLM(ai)
+
+	if EnableChromeControl {
+		// Set up a server for the accompanying Google Chrome Extension to connect
+		// to, enabling control of the browser by the LLM.
+		chromeServer := chromecontrol.NewServer()
+		if err := chromeServer.Start(); err != nil {
+			panic(fmt.Sprintf("Failed to start WebSocket server: %v", err))
+		}
+		defer chromeServer.Close()
+		chromeServer.AddToolsToLLM(ai)
+	}
 
 	// The liner package makes the input prompt a lot nicer to use, supporting
 	// arrow keys and common keyboard shortcuts.
