@@ -163,7 +163,7 @@ func main() {
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
 				case llms.ThinkingUpdate:
-					activeThought += update.Thought
+					activeThought += update.Text
 					if lastNewline := strings.LastIndex(activeThought, "\n"); lastNewline != -1 {
 						activeThought = activeThought[lastNewline+1:]
 					}

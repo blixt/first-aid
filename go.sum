@@ -30,6 +30,8 @@ github.com/flitsinc/go-llms v0.0.0-20250515145733-9e272863896b h1:eXZ+baHb2s59uf
 github.com/flitsinc/go-llms v0.0.0-20250515145733-9e272863896b/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/flitsinc/go-llms v0.0.0-20250515154616-d697fe16a8cc h1:FccsztvOtroRIGXMElzxUBkQGV0HdPBshR2QAuczi/c=
 github.com/flitsinc/go-llms v0.0.0-20250515154616-d697fe16a8cc/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
+github.com/flitsinc/go-llms v0.0.0-20250515230310-442a0ee51378 h1:l0xiu6c/lIWYn0dEx2d8GLdn9zU9A71QAldjO73UUUE=
+github.com/flitsinc/go-llms v0.0.0-20250515230310-442a0ee51378/go.mod h1:KmiYcocRoeyvmbpvpLzwzag5bue81fkSzW1E4UxZS8w=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-gonic/gin v1.7.0/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=

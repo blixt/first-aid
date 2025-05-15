@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/ebitengine/oto/v3 v3.3.3
-	github.com/flitsinc/go-llms v0.0.0-20250515154616-d697fe16a8cc
+	github.com/flitsinc/go-llms v0.0.0-20250515230310-442a0ee51378
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/peterh/liner v1.2.2
