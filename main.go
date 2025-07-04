@@ -31,7 +31,7 @@ func main() {
 
 	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
 	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
-	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-7-sonnet-latest").WithThinking(1024)
+	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-sonnet-4-20250514").WithThinking(1024)
 
 	ai := llms.New(
 		model,
