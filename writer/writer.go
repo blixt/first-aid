@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 	"sync"
 	"time"
 	"unicode"
@@ -31,8 +32,9 @@ type writer struct {
 	wg     sync.WaitGroup
 	cond   *sync.Cond
 
-	taskLabel string
-	taskIndex int
+	taskLabel    string
+	taskIndex    int
+	taskEndIndex int
 }
 
 const (
@@ -99,11 +101,12 @@ func (w *writer) StartAndWait() {
 		lineLength := 0
 		var charsSinceSpace []char
 		var lastSeenTask string
+		var lastSeenTaskEndIndex int
 		for {
 			w.mu.Lock()
 			// Keep rechecking the values until we have at least one character
 			// to output, a task to update, or we are done.
-			for w.index == len(w.stream) && !w.done && w.taskLabel == lastSeenTask {
+			for w.index == len(w.stream) && !w.done && w.taskLabel == lastSeenTask && w.taskEndIndex == lastSeenTaskEndIndex {
 				w.cond.Wait()
 			}
 
@@ -118,16 +121,40 @@ func (w *writer) StartAndWait() {
 			}
 
 			// If we have a task and we're at the task index, show a spinner for it.
-			if w.taskLabel != lastSeenTask && w.index == w.taskIndex {
+			if (w.taskLabel != lastSeenTask || w.taskEndIndex != lastSeenTaskEndIndex) && w.index == w.taskIndex {
 				taskLabel := w.taskLabel
+				taskEndIndex := w.taskEndIndex
 				w.mu.Unlock()
+
+				// Get the visible portion of the task label
+				visibleLabel := getVisibleTaskLabel(taskLabel, taskEndIndex)
+
 				lastSeenTask = taskLabel
+				lastSeenTaskEndIndex = taskEndIndex
+
 				if didStopSpinner {
 					sp = spinner.Dots1.New()
 					sp.Start(w.w)
 					didStopSpinner = false
 				}
-				sp.SetLabel(taskLabel)
+				sp.SetLabel(visibleLabel)
+
+				// Expand taskEndIndex if we haven't reached the full label yet
+				totalRunes := len([]rune(taskLabel))
+				if taskEndIndex < totalRunes {
+					// Use the same timing logic as character printing (based on runes remaining)
+					remaining := totalRunes - taskEndIndex
+					ms := 5 + 35*math.Exp(-0.005*float64(remaining))
+					time.Sleep(time.Duration(math.Max(ms, 5)) * time.Millisecond)
+
+					w.mu.Lock()
+					if w.taskEndIndex < totalRunes {
+						w.taskEndIndex++
+					}
+					w.mu.Unlock()
+					w.cond.Broadcast()
+				}
+
 				// Any further output will have to wait until the spinner is done.
 				continue
 			}
@@ -214,6 +241,26 @@ func (w *writer) Done() {
 	w.cond.Broadcast()
 }
 
+func (w *writer) AppendTask(label string) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.done {
+		panic("Cannot append task after the writer is done")
+	}
+
+	label = strings.ReplaceAll(label, "\n", " ")
+	if w.taskLabel == "" {
+		// No active task, start a new one
+		w.taskLabel = serif.Format(label)
+		w.taskIndex = len(w.stream)
+		w.taskEndIndex = 0
+	} else {
+		// Extend the current task label
+		w.taskLabel += serif.Format(label)
+	}
+	w.cond.Broadcast()
+}
+
 func (w *writer) SetTask(label string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -222,5 +269,14 @@ func (w *writer) SetTask(label string) {
 	}
 	w.taskLabel = serif.Format(label)
 	w.taskIndex = len(w.stream)
+	w.taskEndIndex = 0
 	w.cond.Broadcast()
+}
+
+// getVisibleTaskLabel extracts the visible portion of the task label based on the window logic
+func getVisibleTaskLabel(fullLabel string, endIndex int) string {
+	runes := []rune(fullLabel)
+	endIndex = min(endIndex, len(runes))
+	startIndex := max(0, endIndex-40)
+	return string(runes[startIndex:endIndex])
 }

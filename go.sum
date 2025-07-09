@@ -14,8 +14,8 @@ github.com/ebitengine/purego v0.8.4/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI
 github.com/elgs/gostrgen v0.0.0-20161222160715-9d61ae07eeae/go.mod h1:wruC5r2gHdr/JIUs5Rr1V45YtsAzKXZxAnn/5rPC97g=
 github.com/elgs/gostrgen v0.0.0-20220325073726-0c3e00d082f6 h1:x9TA+vnGEyqmWY+eA9HfgxNRkOQqwiEpFE9IPXSGuEA=
 github.com/elgs/gostrgen v0.0.0-20220325073726-0c3e00d082f6/go.mod h1:wruC5r2gHdr/JIUs5Rr1V45YtsAzKXZxAnn/5rPC97g=
-github.com/flitsinc/go-llms v0.0.0-20250703155343-f4c2ccf583ae h1:6wR1FsmQPi9WPUdGy64h+O4/YZSMLeQdfgmNTB+d/54=
-github.com/flitsinc/go-llms v0.0.0-20250703155343-f4c2ccf583ae/go.mod h1:rExgUliUbfAt1v0K2uazwPNua+QHNs8YRBvHyrhXVag=
+github.com/flitsinc/go-llms v0.0.0-20250708185650-b8d091d5256a h1:ifovOIhAwmPgWDs7izb/6lzyeIv/r7AfWwiZnQEjJrI=
+github.com/flitsinc/go-llms v0.0.0-20250708185650-b8d091d5256a/go.mod h1:rExgUliUbfAt1v0K2uazwPNua+QHNs8YRBvHyrhXVag=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-gonic/gin v1.7.0/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=

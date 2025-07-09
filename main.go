@@ -31,7 +31,10 @@ func main() {
 
 	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
 	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
-	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-sonnet-4-20250514").WithThinking(1024)
+	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-sonnet-4-20250514").
+		WithBeta("interleaved-thinking-2025-05-14").
+		WithBeta("fine-grained-tool-streaming-2025-05-14").
+		WithThinking(1024)
 
 	ai := llms.New(
 		model,
@@ -159,23 +162,27 @@ func main() {
 			defer w.Done()
 			hasAddedText := false
 			hasAddedTool := false
-			activeThought := ""
+			var thinkingStart time.Time
 			for update := range ai.Chat(input) {
 				switch update := update.(type) {
 				case llms.ThinkingUpdate:
-					activeThought += update.Text
-					if lastNewline := strings.LastIndex(activeThought, "\n"); lastNewline != -1 {
-						activeThought = activeThought[lastNewline+1:]
+					if hasAddedTool {
+						fmt.Fprint(w, "\n")
+						hasAddedTool = false
 					}
-					if len(activeThought) > 80 {
-						activeThought = "…" + strings.TrimLeft(activeThought[len(activeThought)-79:], " ")
+					w.AppendTask(update.Text)
+					if thinkingStart.IsZero() {
+						thinkingStart = time.Now()
 					}
-					w.SetTask(activeThought)
 				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
 						hasAddedTool = false
+					} else if !thinkingStart.IsZero() {
+						w.SetTask("")
+						fmt.Fprintf(w, "💭 Thought for %.1f seconds\n\n", time.Since(thinkingStart).Seconds())
 					}
+					thinkingStart = time.Time{}
 					if !hasAddedText {
 						text := strings.TrimLeftFunc(update.Text, unicode.IsSpace)
 						if text != "" {
@@ -192,6 +199,7 @@ func main() {
 					} else if hasAddedText {
 						fmt.Fprint(w, "\n\n")
 					}
+					thinkingStart = time.Time{}
 					w.SetTask(update.Tool.Label())
 					hasAddedTool = true
 					hasAddedText = false
