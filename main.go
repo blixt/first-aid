@@ -45,7 +45,6 @@ func main() {
 		firstaid.SpliceFile,
 		firstaid.SpeakOutLoud,
 	)
-	ai.WithDebug()
 
 	ai.SystemPrompt = func() content.Content {
 		var scratchpad string

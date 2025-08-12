@@ -4,14 +4,14 @@ go 1.24.2
 
 require (
 	github.com/ebitengine/oto/v3 v3.3.3
-	github.com/flitsinc/go-llms v0.0.0-20250708185650-b8d091d5256a
+	github.com/flitsinc/go-llms v0.0.0-20250811120353-9d64b1f96fbf
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/peterh/liner v1.2.2
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
 	github.com/use-go/onvif v0.0.9
-	golang.org/x/term v0.32.0
+	golang.org/x/term v0.34.0
 )
 
 require (
@@ -28,10 +28,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/image v0.28.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/image v0.30.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
 )
