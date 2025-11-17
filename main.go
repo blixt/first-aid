@@ -173,6 +173,8 @@ func main() {
 					if thinkingStart.IsZero() {
 						thinkingStart = time.Now()
 					}
+				case llms.ThinkingDoneUpdate:
+					// TODO: We should probably use this event.
 				case llms.TextUpdate:
 					if hasAddedTool {
 						fmt.Fprint(w, "\n\n")
