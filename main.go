@@ -29,9 +29,9 @@ func main() {
 	// Load .env if it exists. TODO: This should probably change to .Load().
 	godotenv.Overload()
 
-	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
-	// model := google.New("gemini-1.5-pro-001").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
-	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-sonnet-4-20250514").
+	// model := openai.New(os.Getenv("OPENAI_API_KEY"), "gpt-5.1-codex")
+	// model := google.New("gemini-2.5-flash").WithGeminiAPI(os.Getenv("GOOGLE_API_KEY"))
+	model := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-haiku-4-5-20251001").
 		WithBeta("interleaved-thinking-2025-05-14").
 		WithBeta("fine-grained-tool-streaming-2025-05-14").
 		WithThinking(1024)
